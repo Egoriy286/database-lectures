@@ -21,10 +21,10 @@
 \usepackage{array}
 
 % =========================================================
-% TikZ (ER-диаграммы и схемы)
+% TikZ (схемы, архитектуры, диаграммы)
 % =========================================================
 \usepackage{tikz}
-\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit, backgrounds}
 
 % =========================================================
 % Тема
@@ -40,7 +40,7 @@
 \definecolor{svfuLight}{RGB}{230,240,255}
 
 % =========================================================
-% Стили TikZ (ER-нотация Чена, схемы, уровни, циклы)
+% Стили TikZ
 % =========================================================
 \tikzset{
   entity/.style={
@@ -72,6 +72,16 @@
     rectangle, draw=svfuDark, thick, fill=white,
     minimum width=2.6cm, minimum height=0.9cm,
     font=\footnotesize, align=center, rounded corners=1pt
+  },
+  module/.style={
+    rectangle, draw=svfuDark, very thick, fill=white,
+    minimum width=3.4cm, minimum height=1.1cm,
+    font=\footnotesize\bfseries, align=center, rounded corners=2pt
+  },
+  actor/.style={
+    rectangle, draw=svfuDark, thick, fill=svfuLight,
+    minimum width=2.6cm, minimum height=1cm,
+    font=\small\bfseries, align=center, rounded corners=8pt
   }
 }
 
@@ -206,12 +216,12 @@
 \begin{frame}[plain]
   \vspace*{1cm}
   \begin{center}
-    
+
     \colorbox{svfuDark}{%
       \parbox[c][2.8cm][c]{0.86\paperwidth}{%
         \centering
         {\LARGE\color{white}
-          Лекция 1. Введение в проектирование баз данных. \\ Данные и модели представления.
+          Лекция 2. Системы управления базами данных (СУБД)
         }
       }%
     }
@@ -222,11 +232,9 @@
 
   \centering
   {\normalsize Дисциплина: Методы и средства проектирования баз данных}\\[4pt]
- {\small
-   Составитель: Монастырев Егорий Егорьевич, М-ВТ-25 
- }\\[4pt]
-
- 
+  {\small
+    Составитель: Монастырев Егорий Егорьевич, М-ВТ-25
+  }\\[4pt]
 
   {\small
     Якутск, 2026
@@ -237,1806 +245,983 @@
 \end{frame}
 
 
-% % =========================================================
-% % О ДИСЦИПЛИНЕ
-% % =========================================================
-% \begin{frame}{О дисциплине}
-
-% Курс посвящён методам организации и
-% \textbf{проектирования современных баз данных}.
-
-% \vspace{0.3cm}
-
-% \begin{itemize}
-%   \item природа данных и их жизненный цикл;
-%   \item концептуальное и логическое проектирование;
-%   \item реляционная модель данных и язык SQL;
-%   \item ограничения целостности и нормализация;
-%   \item физическое проектирование;
-%   \item создание приложений, работающих с БД.
-% \end{itemize}
-
-% \end{frame}
-
-
-
-
-
 % =========================================================
-% МЕСТО КУРСА
+% СВЯЗЬ С ЛЕКЦИЕЙ 1 + ЦЕЛИ (объединённый слайд)
 % =========================================================
-\begin{frame}{Введение в проектирование баз данных}
+\begin{frame}{Связь с предыдущей лекцией и цели сегодняшней}
 
-Проектирование баз данных — одна из фундаментальных
-инженерных компетенций разработчика программного обеспечения:
-веб-приложения, банковские и научные системы, корпоративное ПО.
+\small
+\textbf{Уже знаем (Лекция 1):} данные и модели их представления,
+предметная область, ER-модель (сущность, атрибут, связь).
 
-\vspace{0.5cm}
+\vspace{0.4cm}
 
-\begin{alertblock}{Главная идея}
-Разработчик работает не только с кодом,
-но и с данными, которые этот код создаёт и использует.
-Прежде чем спроектировать хранение, необходимо понять
-природу самих данных.
+\textbf{Сегодня разбираемся:}
+\begin{enumerate}
+  \item Чем база данных, СУБД и система базы данных отличаются друг от друга?
+  \item Какие функции обязана выполнять СУБД и зачем?
+  \item Из каких программных компонентов состоит СУБД изнутри?
+  \item Как СУБД обслуживает многих пользователей одновременно?
+  \item Из каких подъязыков состоит SQL и как ими пользоваться на практике?
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\begin{alertblock}{Зачем это нужно уже сейчас}
+На ближайшей лабораторной работе вы начнёте писать
+реальные SQL-команды — сегодняшняя лекция даёт для этого
+необходимый минимум.
 \end{alertblock}
 
 \end{frame}
 
-% --- Контрольные вопросы ---
-\begin{frame}{Ключевые вопросы}
+
+% =========================================================
+% РАЗДЕЛ 1. ОТ БАЗЫ ДАННЫХ К СИСТЕМЕ УПРАВЛЕНИЯ БАЗАМИ ДАННЫХ
+% =========================================================
+
+\begin{frame}{Почему одной базы данных недостаточно}
+
+Представим, что данные просто лежат в файлах на диске,
+без управляющей программы.
+
+\vspace{0.3cm}
+
+\begin{itemize}
+  \item Кто гарантирует, что два сотрудника не испортят
+        одну и ту же запись, редактируя её одновременно?
+  \item Кто восстановит данные после сбоя электропитания
+        посреди записи?
+  \item Кто проверит, что оценка не выставлена
+        несуществующему студенту?
+  \item Кто ограничит доступ так, чтобы студент не мог
+        править чужие оценки?
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{alertblock}{Вывод}
+Сами данные не решают эти задачи. Ими управляет
+специализированное программное обеспечение — \textbf{СУБД}.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}{База данных и СУБД: уточнённые определения}
+
+\small
+\begin{columns}[T]
+\column{0.5\textwidth}
+\begin{block}{База данных}
+Организованная по \textbf{схеме} совокупность
+взаимосвязанных данных, находящаяся под управлением
+специализированного ПО, предназначенная для совместного
+использования многими приложениями и пользователями.
+\end{block}
+\column{0.5\textwidth}
+\begin{block}{СУБД}
+Комплекс программных средств, реализующий определение
+схемы, обработку транзакций, поддержание целостности,
+разграничение доступа, журналирование и восстановление.
+\end{block}
+\end{columns}
+
+\vspace{0.4cm}
+
+\begin{alertblock}{Почему не просто «набор данных» / «программа для БД»}
+Такие бытовые формулировки не отличают базу данных
+от таблицы Excel и не объясняют, зачем именно нужна СУБД —
+целостность, многопользовательский доступ, восстановление.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}{От СУБД к системе базы данных}
+
+\begin{columns}[T]
+
+\column{0.52\textwidth}
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[node distance=0.3cm and 0.5cm]
+
+\node[entity, minimum width=4.6cm, minimum height=0.75cm] (data) {База данных};
+\node[layer, minimum width=4.6cm, minimum height=0.75cm, below=of data] (dbms) {СУБД};
+\node[actor, fill=white, minimum height=0.7cm, below=of dbms, xshift=-1.3cm] (apps) {Приложения};
+\node[actor, fill=white, minimum height=0.7cm, below=of dbms, xshift=1.3cm] (people) {Пользователи};
+
+\begin{scope}[on background layer]
+\node[draw=svfuAccent, very thick, rounded corners=6pt,
+      fit=(data)(dbms)(apps)(people), inner sep=0.28cm,
+      label={[font=\bfseries\scriptsize]above:Система базы данных}]
+      (frame) {};
+\end{scope}
+
+\end{tikzpicture}%
+}
+
+\column{0.44\textwidth}
+\scriptsize
+\begin{tabular}{>{\bfseries}p{0.34\textwidth}|p{0.55\textwidth}}
+\toprule
+Понятие & Что это\\
+\midrule
+База данных & данные + схема\\
+СУБД & программа управления данными\\
+Система БД & данные + СУБД + приложения + люди\\
+\bottomrule
+\end{tabular}
+
+\end{columns}
+
+\vspace{0.35cm}
+\small
+\begin{alertblock}{На примере «Университета»}
+Данные о студентах — \textbf{БД}; PostgreSQL — \textbf{СУБД};
+портал деканата (БД + СУБД + приложение + сотрудники) —
+\textbf{система базы данных}.
+\end{alertblock}
+
+\end{frame}
+
+
+% =========================================================
+% РАЗДЕЛ 2. НАЗНАЧЕНИЕ И ФУНКЦИИ СУБД
+% =========================================================
+
+\begin{frame}{Общее назначение СУБД}
+
+СУБД решает задачи, которые невозможно надёжно решить
+средствами отдельных файлов и прикладных программ:
+
+\vspace{0.3cm}
+
+\begin{itemize}
+  \item предоставляет единый, контролируемый способ
+        доступа к данным;
+  \item берёт на себя ответственность за корректность
+        данных при сбоях и параллельной работе;
+  \item скрывает от приложений детали физического
+        хранения данных.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{block}{Идея}
+Приложения работают с данными \textbf{через} СУБД,
+а не напрямую с файлами на диске.
+\end{block}
+
+\end{frame}
+
+
+\begin{frame}{Функции СУБД}
+
+\scriptsize
+\begin{table}
+\centering
+\begin{tabular}{p{0.24\textwidth}|p{0.34\textwidth}|p{0.32\textwidth}}
+\toprule
+\textbf{Функция} & \textbf{Суть} & \textbf{Пример («Университет»)}\\
+\midrule
+Хранение & таблицы, файлы, страницы & данные о студентах на диске\\
+Обработка запросов & разбор и оптимизация запросов & поиск студента по фамилии\\
+Транзакции & «всё или ничего» & перевод студента в другую группу\\
+Целостность & проверка правил корректности & оценка не привязана к несуществующему студенту\\
+Многопольз. доступ & корректная одновременная работа & два сотрудника правят одну запись\\
+Журналирование и восстановление & защита от потери данных & сбой питания не стирает ведомость\\
+Безопасность & разграничение прав доступа & студент видит только свои оценки\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{frame}
+
+
+\begin{frame}{От функций СУБД — к свойствам базы данных}
+
+\begin{center}
+\begin{tikzpicture}[node distance=0.22cm and 1.2cm]
+
+\node[module, fill=svfuLight, minimum height=0.68cm] (f1) {Целостность};
+\node[module, fill=svfuLight, minimum height=0.68cm, below=of f1] (f2) {Многопольз.\\доступ};
+\node[module, fill=svfuLight, minimum height=0.68cm, below=of f2] (f3) {Безопасность};
+\node[module, fill=svfuLight, minimum height=0.68cm, below=of f3] (f4) {Хранение};
+
+\node[catbox, minimum height=0.68cm, right=2.4cm of f1] (p1) {Целостность (БД)};
+\node[catbox, minimum height=0.68cm, right=2.4cm of f2] (p2) {Разделяемость};
+\node[catbox, minimum height=0.68cm, right=2.4cm of f3] (p3) {Защищённость};
+\node[catbox, minimum height=0.68cm, right=2.4cm of f4] (p4) {Интегрированность};
+
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (f1) -- (p1);
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (f2) -- (p2);
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (f3) -- (p3);
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (f4) -- (p4);
+
+\node[above=0.15cm of f1, font=\footnotesize\bfseries] {Функция СУБД};
+\node[above=0.15cm of p1, font=\footnotesize\bfseries] {Свойство БД};
+
+\end{tikzpicture}
+\end{center}
+
+\small
+\begin{alertblock}{Главная мысль}
+Свойства базы данных, названные в Лекции 1
+(целостность, разделяемость, защищённость,
+интегрированность), — не сами по себе, а \textbf{результат}
+работы конкретных функций СУБД.
+\end{alertblock}
+\normalsize
+
+\end{frame}
+
+
+% =========================================================
+% РАЗДЕЛ 3. АРХИТЕКТУРА ПРЕДСТАВЛЕНИЯ ДАННЫХ
+% =========================================================
+
+\begin{frame}{Схема и экземпляр базы данных}
+
+\begin{itemize}
+  \item \textbf{Схема базы данных} — формальное описание
+        структуры БД: таблицы, атрибуты, типы данных,
+        связи, ограничения. Меняется редко.
+  \item \textbf{Экземпляр базы данных} — конкретное состояние
+        данных в определённый момент времени. Меняется
+        практически при каждой операции записи.
+\end{itemize}
+
+\vspace{0.4cm}
+
+\begin{alertblock}{Аналогия для запоминания}
+Схема — это «тип» (структура), экземпляр — это «значение»
+(конкретное содержимое) в данный момент.
+\end{alertblock}
+
+\vspace{0.2cm}
+\footnotesize
+Пример: схема таблицы \texttt{student} (id, ФИО, group\_id)
+не меняется годами; строки этой таблицы меняются
+каждый день.
+
+\end{frame}
+
+
+\begin{frame}{Архитектура ANSI/SPARC и независимость данных}
+
+\footnotesize
+Кратко напомним схему из Лекции 1 и свяжем её
+с независимостью данных.
+
+\begin{columns}[T]
+
+\column{0.5\textwidth}
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[node distance=0.35cm]
+\node[layer, minimum width=4.4cm, minimum height=1cm] (ext) {Внешний\\\footnotesize представления пользователей};
+\node[layer, minimum width=4.4cm, minimum height=1cm, below=of ext] (con) {Концептуальный\\\footnotesize структура БД};
+\node[layer, minimum width=4.4cm, minimum height=1cm, below=of con] (int) {Внутренний\\\footnotesize физическое хранение};
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (ext) -- (con);
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (con) -- (int);
+\end{tikzpicture}%
+}
+
+\column{0.47\textwidth}
+\scriptsize
+\begin{tabular}{p{0.28\textwidth}|p{0.6\textwidth}}
+\toprule
+Тип независимости & Что позволяет\\
+\midrule
+Физическая & менять хранение и индексы без переписывания приложений\\
+Логическая & менять концептуальную схему, сохраняя внешние представления\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.3cm}
+Цель всей архитектуры — \textbf{независимость данных}.
+
+\end{columns}
+
+\vspace{0.25cm}
+\begin{alertblock}{Важная оговорка}
+Логическая независимость имеет пределы: удаление
+атрибута, уже использованного приложением, всё равно
+нарушит его работу.
+\end{alertblock}
+
+\end{frame}
+
+
+% =========================================================
+% РАЗДЕЛ 4. ВНУТРЕННЯЯ АРХИТЕКТУРА СУБД
+% =========================================================
+
+\begin{frame}{ANSI/SPARC и внутренняя архитектура — не одно и то же}
+
+\begin{block}{Важное разграничение}
+Архитектура ANSI/SPARC отвечает на вопрос
+\textbf{«как данные видны снаружи»}.\\[4pt]
+Внутренняя архитектура СУБД отвечает на вопрос
+\textbf{«из каких программных модулей СУБД состоит изнутри»}.
+\end{block}
+
+\vspace{0.4cm}
+
+Это разные по природе понятия, которые не стоит путать:
+первое — про уровни абстракции представления данных,
+второе — про устройство программного ядра.
+
+\end{frame}
+
+
+\begin{frame}{Компоненты ядра СУБД}
+
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.42\textwidth}|p{0.44\textwidth}}
+\toprule
+\textbf{Компонент} & \textbf{Что делает}\\
+\midrule
+Обработчик запросов & разбор и оптимизация запросов\\
+Менеджер транзакций & контроль атомарности и изоляции операций\\
+Менеджер хранения и буфера & управление файлами, страницами, кэшем в ОЗУ\\
+Менеджер журнала и восстановления & фиксация изменений, восстановление после сбоев\\
+Словарь данных / системный каталог & хранение метаданных о структуре БД\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+\footnotesize
+Каждый компонент отвечает за одну из функций СУБД,
+рассмотренных в разделе о назначении СУБД.
+
+\end{frame}
+
+
+\begin{frame}{Путь одного запроса через компоненты СУБД}
+
+\begin{center}
+\resizebox{0.98\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.55cm and 0.7cm]
+
+\node[actor, fill=svfuLight] (app) {Приложение\\\texttt{SELECT ...}};
+\node[module, right=of app] (parser) {Обработчик\\запросов};
+\node[module, right=of parser] (tx) {Менеджер\\транзакций};
+\node[module, right=of tx] (storage) {Менеджер\\хранения};
+\node[entity, right=of storage, minimum height=1.1cm] (disk) {Данные\\на диске};
+
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (app) -- (parser);
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (parser) -- (tx);
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (tx) -- (storage);
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (storage) -- (disk);
+
+\node[module, below=1.1cm of tx] (log) {Менеджер\\журнала};
+\draw[-{Latex[length=2mm]}, thick, svfuDark, dashed] (tx) -- (log);
+
+\node[catbox, below=1.1cm of parser] (dict) {Словарь\\данных};
+\draw[-{Latex[length=2mm]}, thick, svfuDark, dashed] (parser) -- (dict);
+
+\end{tikzpicture}%
+}
+\end{center}
+
+\footnotesize
+Схема иллюстрирует общий путь запроса без разбора
+алгоритмов оптимизации: обработчик обращается к словарю
+данных, чтобы узнать структуру таблиц; менеджер транзакций
+взаимодействует с менеджером журнала для гарантии
+устойчивости изменений.
+
+\end{frame}
+
+
+% =========================================================
+% РАЗДЕЛ 5. МНОГОПОЛЬЗОВАТЕЛЬСКИЙ РЕЖИМ
+% =========================================================
+
+\begin{frame}{Клиент-серверная модель доступа к СУБД}
+
+\begin{center}
+\begin{tikzpicture}[node distance=0.4cm and 0.9cm]
+
+\node[actor, fill=white, minimum width=2.4cm] (c1) {Деканат};
+\node[actor, fill=white, minimum width=2.4cm, below=0.35cm of c1] (c2) {Приёмная комиссия};
+\node[actor, fill=white, minimum width=2.4cm, below=0.35cm of c2] (c3) {Личный кабинет};
+
+\node[layer, right=1.8cm of c2, minimum width=3.6cm] (server) {Сервер СУБД\\\footnotesize (PostgreSQL)};
+
+\node[entity, right=1.8cm of server, minimum height=1.4cm, minimum width=2.2cm] (files) {Файлы\\базы данных};
+
+\draw[thick, svfuAccent] (c1) -- (server);
+\draw[thick, svfuAccent] (c2) -- (server);
+\draw[thick, svfuAccent] (c3) -- (server);
+\draw[-{Latex[length=2.5mm]}, thick, svfuDark] (server) -- (files);
+
+\end{tikzpicture}
+\end{center}
+
+\begin{alertblock}{Идея}
+Множество клиентских приложений одновременно подключаются
+к \textbf{одному} серверу СУБД, а не к файлам напрямую.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}{Параллельная работа: постановка проблемы}
+
+\begin{center}
+\large
+Сотрудник А редактирует оценку студента 101
+\end{center}
+\begin{center}
+\large
+Сотрудник Б \textbf{одновременно} редактирует ту же оценку
+\end{center}
+
+\vspace{0.4cm}
+
+\begin{itemize}
+  \item Что произойдёт, если оба сохранят изменения
+        одновременно?
+  \item Как СУБД не допускает потери одного из изменений?
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{alertblock}{На этом этапе — только постановка вопроса}
+Механика решения (блокировки, уровни изоляции)
+рассматривается в отдельной будущей лекции
+о транзакциях и параллельном выполнении. Сейчас важно
+зафиксировать: СУБД обязана это контролировать.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}{Роли участников работы с СУБД}
+
+\small
+\begin{table}
+\centering
+\begin{tabular}{>{\bfseries}p{0.32\textwidth}|p{0.55\textwidth}}
+\toprule
+Роль & Что делает\\
+\midrule
+Администратор БД (АБД) &
+администрирует безопасность, резервное копирование
+и восстановление, следит за производительностью\\
+Прикладные программисты &
+используют транзакции и целостность через приложение,
+не работая с ядром СУБД напрямую\\
+Конечные пользователи &
+взаимодействуют с данными через приложение,
+не видя внутреннего устройства СУБД\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{frame}
+
+
+% =========================================================
+% РАЗДЕЛ 6. СУБД ДЛЯ ЛАБОРАТОРНЫХ РАБОТ
+% =========================================================
+
+\begin{frame}{СУБД для лабораторных работ: PostgreSQL и инструменты}
+
+В курсе используется \textbf{PostgreSQL} — серверная СУБД
+(в отличие от настольных СУБД вроде Access, уже
+упомянутых в Лекции 1: ограниченный многопользовательский
+доступ, локальное использование).
+
+\vspace{0.4cm}
+
+Подключение и работа с сервером PostgreSQL — через
+отдельные клиентские инструменты:
+
+\begin{itemize}
+  \item \textbf{pgAdmin} — графический интерфейс: таблицы,
+        запросы, права доступа;
+  \item \textbf{psql} — консольный (CLI) клиент для прямой
+        работы с сервером.
+\end{itemize}
+
+\vspace{0.4cm}
+
+\begin{alertblock}{На лабораторных работах}
+Именно через psql / pgAdmin вы будете выполнять
+SQL-команды, которые рассматриваются далее в этой лекции.
+\end{alertblock}
+
+\end{frame}
+
+
+% =========================================================
+% РАЗДЕЛ 7. SQL КАК СРЕДСТВО РАБОТЫ С СУБД
+% =========================================================
+
+\begin{frame}{SQL как декларативный язык}
+
+\begin{block}{Определение}
+\textbf{SQL} (Structured Query Language) — стандартизированный
+декларативный язык для определения структуры данных,
+выполнения операций над данными и управления доступом
+в реляционных СУБД.
+\end{block}
+
+\vspace{0.3cm}
+
+\begin{itemize}
+  \item декларативный — пользователь описывает,
+        \textbf{что} нужно получить, а не \textbf{как} именно
+        это будет вычислено;
+  \item поддерживается практически всеми реляционными СУБД
+        (с диалектными отличиями; далее — синтаксис PostgreSQL).
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}{Подъязыки SQL: карта языка}
+
+\small
+\begin{table}
+\centering
+\begin{tabular}{>{\bfseries}p{0.13\textwidth}|p{0.37\textwidth}|p{0.36\textwidth}}
+\toprule
+Подъязык & Назначение & Связь с функцией СУБД\\
+\midrule
+DDL & определение структуры данных & хранение\\
+DML & работа с данными & обработка запросов\\
+DCL & управление доступом & безопасность\\
+TCL & управление транзакциями & транзакции\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.4cm}
+
+\begin{alertblock}{Главная идея}
+SQL — не хаотичный набор команд, а язык, структурно
+повторяющий функции самой СУБД. Далее — каждый подъязык
+подробнее, с рабочим синтаксисом для лабораторной работы.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}{DDL — язык определения данных}
+
+\textbf{DDL (Data Definition Language)} — команды, которые
+определяют и изменяют \textbf{структуру} базы данных:
+таблицы, столбцы, ограничения.
+
+\vspace{0.3cm}
+
+\small
+\begin{table}
+\centering
+\begin{tabular}{>{\ttfamily}p{0.22\textwidth}|p{0.62\textwidth}}
+\toprule
+\textnormal{Команда} & \textnormal{Назначение}\\
+\midrule
+CREATE & создать объект (таблицу, индекс и т.\,д.)\\
+ALTER & изменить структуру существующего объекта\\
+DROP & удалить объект\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+\normalsize
+\begin{alertblock}{Связь с функциями СУБД}
+DDL — практический инструмент функции \textbf{«хранение
+данных»}: этими командами задаётся схема, которую
+использует СУБД.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{DDL — пример: создание таблиц}
+
+\small
+\begin{verbatim}
+CREATE TABLE student_group (
+    id      SERIAL PRIMARY KEY,
+    name    TEXT NOT NULL
+);
+
+CREATE TABLE student (
+    id         SERIAL PRIMARY KEY,
+    full_name  TEXT NOT NULL,
+    group_id   INTEGER REFERENCES student_group(id)
+);
+\end{verbatim}
+\normalsize
+
+\vspace{0.2cm}
+\footnotesize
+Ограничения (\texttt{PRIMARY KEY}, \texttt{REFERENCES})
+подробно рассматриваются в Лекции 3; здесь важно увидеть,
+как DDL превращает логическую структуру в реальные таблицы.
+
+\end{frame}
+
+
+\begin{frame}{DML — язык управления данными}
+
+\textbf{DML (Data Manipulation Language)} — команды для
+чтения и изменения \textbf{содержимого} таблиц.
+
+\vspace{0.3cm}
+
+\small
+\begin{table}
+\centering
+\begin{tabular}{>{\ttfamily}p{0.22\textwidth}|p{0.62\textwidth}}
+\toprule
+\textnormal{Команда} & \textnormal{Назначение}\\
+\midrule
+SELECT & выбрать данные, удовлетворяющие условию\\
+INSERT & добавить новую строку\\
+UPDATE & изменить значения в существующих строках\\
+DELETE & удалить строки\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+\normalsize
+\begin{alertblock}{Связь с функциями СУБД}
+DML напрямую задействует \textbf{обработчик запросов}
+(раздел о внутренней архитектуре) и опирается на
+\textbf{целостность}, которую контролирует СУБД.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{DML — примеры базовых операций}
+
+\small
+\begin{verbatim}
+SELECT full_name FROM student
+WHERE group_id = 1;
+
+INSERT INTO student (full_name, group_id)
+VALUES ('Иванов И. И.', 1);
+
+UPDATE student SET group_id = 2
+WHERE id = 5;
+
+DELETE FROM student WHERE id = 7;
+\end{verbatim}
+\normalsize
+
+\vspace{0.2cm}
+\footnotesize
+Это базовый синтаксис для одной таблицы — достаточный
+минимум для первой лабораторной работы.
+
+\end{frame}
+
+
+\begin{frame}[fragile]{DCL — язык управления доступом}
+
+\textbf{DCL (Data Control Language)} — команды для
+разграничения прав доступа к данным.
+
+\vspace{0.3cm}
+
+\small
+\begin{table}
+\centering
+\begin{tabular}{>{\ttfamily}p{0.22\textwidth}|p{0.62\textwidth}}
+\toprule
+\textnormal{Команда} & \textnormal{Назначение}\\
+\midrule
+GRANT & предоставить право на объект (роли, пользователю)\\
+REVOKE & отозвать ранее предоставленное право\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+
+\begin{verbatim}
+GRANT SELECT ON student TO dean_office;
+REVOKE UPDATE ON student FROM guest;
+\end{verbatim}
+\normalsize
+
+\vspace{0.1cm}
+\footnotesize
+DCL — практическая реализация функции \textbf{безопасность}:
+студент из примера про безопасность (раздел о функциях СУБД)
+видит свои оценки именно благодаря правам, выданным через DCL.
+
+\end{frame}
+
+
+\begin{frame}[fragile]{TCL — язык управления транзакциями}
+
+\textbf{TCL (Transaction Control Language)} — команды для
+управления границами транзакции.
+
+\vspace{0.3cm}
+
+\small
+\begin{table}
+\centering
+\begin{tabular}{>{\ttfamily}p{0.22\textwidth}|p{0.62\textwidth}}
+\toprule
+\textnormal{Команда} & \textnormal{Назначение}\\
+\midrule
+BEGIN & начать транзакцию\\
+COMMIT & зафиксировать все изменения транзакции\\
+ROLLBACK & отменить все изменения транзакции\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+
+\begin{verbatim}
+BEGIN;
+UPDATE student SET group_id = 2 WHERE id = 5;
+UPDATE student_group SET name = 'ПМИ-25' WHERE id = 2;
+COMMIT;
+\end{verbatim}
+\normalsize
+
+\vspace{0.1cm}
+\footnotesize
+Обе команды \texttt{UPDATE} выполнятся как единое целое
+(«всё или ничего») — это и есть \textbf{атомарность}
+транзакции, упомянутая при определении термина.
+
+\end{frame}
+
+
+\begin{frame}{Предпросмотр: что дальше в лабораторных работах}
+
+Сегодня мы увидели базовый синтаксис DDL, DML, DCL, TCL
+для работы с одной таблицей.
+
+\vspace{0.3cm}
+
+На лабораторных работах и в следующих лекциях появятся:
+
+\begin{itemize}
+  \item выборка данных сразу из нескольких таблиц — \texttt{JOIN};
+  \item агрегатные функции — \texttt{COUNT}, \texttt{SUM},
+        \texttt{AVG}, \texttt{GROUP BY};
+  \item вложенные запросы (подзапросы);
+  \item индексы для ускорения запросов (лекция о физическом
+        проектировании).
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{alertblock}{Важно}
+Синтаксис, показанный сегодня, — рабочий минимум для первой
+лабораторной работы; более сложные запросы разбираются
+отдельно.
+\end{alertblock}
+
+\end{frame}
+
+
+% =========================================================
+% РАЗДЕЛ 8. ФИЗИЧЕСКОЕ ХРАНЕНИЕ ДАННЫХ
+% =========================================================
+
+\begin{frame}{От логической модели к физическому хранению}
+
+\begin{center}
+\resizebox{0.98\textwidth}{!}{%
+\begin{tikzpicture}[node distance=1cm]
+
+\node[entity, minimum width=3.1cm] (log) {Логическая структура\\(таблицы, столбцы)};
+\node[catbox, right=of log] (files) {Файлы};
+\node[catbox, right=of files] (pages) {Страницы};
+\node[catbox, right=of pages, minimum width=2.6cm] (buf) {Буфер\\(кэш в ОЗУ)};
+
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (log) -- (files);
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (files) -- (pages);
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (pages) -- (buf);
+
+\end{tikzpicture}%
+}
+\end{center}
+
+\footnotesize
+Пользователь и приложение работают только с логической
+структурой; всё, что ниже, скрыто внутренним уровнем
+архитектуры ANSI/SPARC.
+
+\end{frame}
+
+
+\begin{frame}{Файлы, страницы, буферы — кратко}
+
+\begin{itemize}
+  \item \textbf{Файл} — единица хранения таблицы или её части
+        на диске;
+  \item \textbf{Страница} — блок фиксированного размера,
+        которым СУБД читает и записывает данные на диск;
+  \item \textbf{Буфер} — область оперативной памяти,
+        где хранятся недавно использованные страницы,
+        чтобы не обращаться к диску повторно.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{alertblock}{Важно}
+Это обзорное представление. Алгоритмы работы буфера
+и физической организации файлов — предмет отдельной
+будущей лекции о физическом проектировании.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}{Индекс как идея}
+
+Поиск студента по фамилии в таблице из миллиона строк:
+
+\vspace{0.3cm}
+
+\begin{itemize}
+  \item \textbf{без индекса} — СУБД просматривает
+        все строки подряд;
+  \item \textbf{с индексом} — СУБД использует
+        вспомогательную структуру, которая сразу указывает,
+        где искать нужные строки.
+\end{itemize}
+
+\vspace{0.4cm}
+
+\begin{block}{Определение}
+\textbf{Индекс} — вспомогательная структура данных,
+ускоряющая поиск записей ценой дополнительного
+объёма хранения и дополнительных затрат при изменении
+данных.
+\end{block}
+
+\vspace{0.2cm}
+\footnotesize
+Синтаксис создания индекса и стратегии индексирования —
+предмет отдельной будущей лекции.
+
+\end{frame}
+
+
+% =========================================================
+% РАЗДЕЛ 9. ИТОГИ
+% =========================================================
+
+\begin{frame}{Итоговая схема: от файла к системе базы данных}
+
+\begin{center}
+\resizebox{0.98\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.5cm and 0.4cm]
+
+\node[phase] (file) {Файл};
+\node[phase, right=of file] (table) {Таблица};
+\node[phase, right=of table] (db) {База\\данных};
+\node[phase, right=of db] (dbms) {СУБД};
+\node[phase, right=of dbms] (sys) {Система\\базы данных};
+
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (file) -- (table);
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (table) -- (db);
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (db) -- (dbms);
+\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (dbms) -- (sys);
+
+\end{tikzpicture}%
+}
+\end{center}
+
+\vspace{0.4cm}
+
+\begin{alertblock}{Главная идея лекции}
+СУБД — не просто программа для хранения таблиц,
+а комплекс функций (транзакции, целостность,
+многопользовательский доступ, восстановление,
+безопасность), реализованных набором программных
+компонентов и доступных через SQL.
+\end{alertblock}
+
+\end{frame}
+
+
+\begin{frame}{Что будет раскрыто подробнее в следующих лекциях}
+
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.5\textwidth}|p{0.4\textwidth}}
+\toprule
+\textbf{Тема} & \textbf{Где}\\
+\midrule
+Реляционная модель, ключи, ограничения целостности (SQL) & Лекция 3\\
+Нормализация и нормальные формы & Лекция 3 / отдельная лекция\\
+Сложные запросы: \texttt{JOIN}, агрегатные функции, подзапросы & SQL-практикум\\
+Механика транзакций: изоляция, блокировки & Отдельная лекция о транзакциях\\
+Детали журналирования и восстановления & Та же лекция о надёжности\\
+Синтаксис и стратегии индексирования & Лекция о физическом проектировании\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{frame}
+
+
+\begin{frame}{Контрольные вопросы}
 
 \small
 \begin{enumerate}
-  \item Чем данные отличаются от информации и знаний?
-  \item Как классифицируются данные по источнику, формату и структуре?
-  \item Из каких этапов состоит жизненный цикл данных?
-  \item Чем БД отличается от СУБД?
-  \item Чем табличное представление отличается от документного?
-  \item Чем JSON отличается от NoSQL?
-  \item Что такое объектное хранилище?
-  \item Что такое ER-диаграмма и из чего она состоит?
-  \item Что такое архитектура ANSI/SPARC?
-  \item Зачем нужна нормализация?
+  \item В чём разница между базой данных, СУБД и системой базы данных?
+  \item Что различают схема и экземпляр базы данных?
+  \item Чем архитектура ANSI/SPARC отличается от внутренней архитектуры СУБД?
+  \item Назовите пять программных компонентов ядра СУБД.
+  \item Что такое клиент-серверная модель работы с СУБД?
+  \item Чем отличаются DDL, DML, DCL и TCL — приведите по одной команде на каждый.
+  \item Какая команда SQL отвечает за атомарное выполнение нескольких операций?
+  \item Зачем нужен индекс и какова его цена?
 \end{enumerate}
 
 \end{frame}
 
 
-% % =========================================================
-% % ЦЕЛЬ ЛЕКЦИИ
-% % =========================================================
-% \begin{frame}{Цель лекции}
+\begin{frame}[fragile]{Задание к следующей лекции}
 
-% \begin{itemize}
-%   \item Разграничить понятия «данные», «информация», «знания».
-%   \item Понять принципы классификации и жизненный цикл данных.
-%   \item Понять, что такое база данных и СУБД, зачем нужно проектирование.
-%   \item Сравнить табличное, документное и файловое представление данных.
-%   \item Освоить базовые понятия ER-моделирования (сущность, атрибут, связь).
-%   \item Увидеть путь от предметной области до физической реализации в PostgreSQL.
-% \end{itemize}
-
-% \vspace{0.3cm}
-
-% \begin{block}{Результат}
-% После лекции студент должен видеть БД
-% не как набор таблиц, а как результат
-% последовательного инженерного процесса анализа данных.
-% \end{block}
-
-% \end{frame}
-
-
-% =========================================================
-% ЧАСТЬ I. ДАННЫЕ И ИНФОРМАЦИЯ
-% =========================================================
-
-% --- Данные: определение ---
-\begin{frame}{Данные: определение}
-
-В стандартах и терминологических словарях понятие данных
-связывается с представлением информации в формализованной
-форме, пригодной для передачи, интерпретации или обработки.
+Возьмите предметную область и ER-диаграмму,
+разработанную к Лекции 1.
 
 \vspace{0.3cm}
 
-\begin{block}{Определение (по терминологии NIST)}
-\textbf{Данные} — представление фактов, концепций
-или инструкций в форме, пригодной для коммуникации,
-интерпретации или обработки человеком либо
-автоматическими средствами.
-\end{block}
+Напишите:
+\begin{enumerate}
+  \item команды \texttt{CREATE TABLE} (DDL) для 2--3 сущностей
+        вашей предметной области;
+  \item по одной команде \texttt{INSERT}, \texttt{SELECT},
+        \texttt{UPDATE} (DML) на эти таблицы.
+\end{enumerate}
 
 \vspace{0.3cm}
 
-Примеры данных:
-
-\begin{center}
-\texttt{101} \quad
-\texttt{Иванов И.И.} \quad
-\texttt{23.7} \quad
-\texttt{2026-09-02}
-\end{center}
+\textbf{Результат:} черновой набор DDL/DML-команд —
+основа для первой лабораторной работы.
 
 \end{frame}
-
-
-% --- Семантика данных ---
-\begin{frame}{Семантика данных}
-
-Само значение не всегда содержит информацию о том,
-что именно оно обозначает.
-
-\begin{center}
-\Huge
-\texttt{101}
-\end{center}
-
-\begin{center}
-может быть:
-\end{center}
-
-\begin{center}
-идентификатор студента
-\quad
-номер группы
-\quad
-номер заказа
-\quad
-код объекта
-\end{center}
-
-\vspace{0.3cm}
-
-\begin{alertblock}{Вывод}
-Значение данных должно рассматриваться совместно
-с контекстом и правилами его интерпретации.
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Данные, информация, знания ---
-\begin{frame}{Данные, информация, знания}
-
-Для учебных целей полезно разграничивать три уровня:
-
-\vspace{0.3cm}
-
-\begin{center}
-\Large
-Данные $\rightarrow$ Информация $\rightarrow$ Знания
-\end{center}
-
-\vspace{0.4cm}
-
-\begin{itemize}
-  \item \textbf{Данные} — формализованные представления
-        фактов, наблюдений, измерений.
-  \item \textbf{Информация} — данные, интерпретированные
-        в определённом контексте и обладающие смыслом
-        для получателя (согласуется с терминологией ISO и NIST).
-  \item \textbf{Знания} — организованная совокупность понятий
-        и связей между ними, позволяющая интерпретировать
-        информацию и использовать её при решении задач.
-\end{itemize}
-
-\vspace{0.2cm}
-\footnotesize
-Термин «знание», в отличие от «данных» и «информации»,
-имеет разные трактовки в литературе; здесь он используется
-как более высокий уровень организации информации.
-
-\end{frame}
-
-
-\begin{frame}{Пример: от данных к знаниям}
-
-\begin{columns}[T]
-\column{0.32\textwidth}
-\begin{block}{\centering Данные}
-\begin{center}
-\small
-\texttt{Студент: 101}\\[0.1cm]
-\texttt{Математика: 5}\\[0.1cm]
-\texttt{Программирование: 5}\\[0.1cm]
-\texttt{Физика: 3}
-\end{center}
-\end{block}
-
-\column{0.32\textwidth}
-\begin{block}{\centering Информация}
-\small
-Студент 101 имеет высокие оценки по математике и программированию и более низкую — по физике.
-\end{block}
-
-\column{0.32\textwidth}
-\begin{block}{\centering Знание}
-\small
-Выраженная успеваемость студента в дисциплинах, связанных с математикой и программированием.
-\end{block}
-\end{columns}
-
-\vspace{0.7cm}
-
-\begin{center}
-\large
-\textbf{Данные}
-\;$\longrightarrow$\;
-\textit{Интерпретация}
-\;$\longrightarrow$\;
-\textbf{Информация}
-\;$\longrightarrow$\;
-\textit{Обобщение опыта}
-\;$\longrightarrow$\;
-\textbf{Знание}
-\end{center}
-
-\end{frame}
-
-
-\begin{frame}{Почему важно различать данные и информацию}
-
-Проектирование информационной системы предполагает  
-работу не просто со значениями, а с их:
-
-\vspace{0.4cm}
-
-\begin{center}
-\begin{tabular}{ccc}
-\textbf{смыслом} & \textbf{структурой} & \textbf{происхождением} \\[0.3cm]
-\textbf{взаимосвязями} & \textbf{ограничениями} & \textbf{временем существования}
-\end{tabular}
-\end{center}
-
-\vspace{0.7cm}
-
-\begin{alertblock}{Ключевой вопрос проектировщика}
-\begin{center}
-Не только \Large\textbf{что хранить?}\\[0.3cm]
-но и \Large\textbf{что означает каждый элемент данных?}
-\end{center}
-\end{alertblock}
-
-\end{frame}
-
-
-% =========================================================
-% ЧАСТЬ II. КЛАССИФИКАЦИЯ ДАННЫХ
-% =========================================================
-
-% --- Обзорная схема классификации (TikZ) ---
-\begin{frame}{Классификация данных: обзор}
-
-\begin{center}
-\begin{tikzpicture}[node distance=0.9cm and 1.6cm]
-
-\node[entity, fill=svfuDark, text=white] (root) {ДАННЫЕ};
-
-\node[catbox, below=1.3cm of root, xshift=-4.2cm] (src) {по источнику};
-\node[catbox, below=1.3cm of root] (fmt) {по формату};
-\node[catbox, below=1.3cm of root, xshift=4.2cm] (str) {по структуре};
-
-\draw[thick, svfuDark] (root) -- (src);
-\draw[thick, svfuDark] (root) -- (fmt);
-\draw[thick, svfuDark] (root) -- (str);
-
-\node[attribute, below=0.5cm of src, xshift=-0.9cm, font=\small] (s1) {наблюдение};
-\node[attribute, below=1.3cm of src, xshift=0.9cm, font=\small] (s2) {эксперимент};
-\draw[thin] (src) -- (s1); \draw[thin] (src) -- (s2);
-
-\node[attribute, below=0.5cm of fmt, xshift=-0.9cm, font=\small] (f1) {текст, числа};
-\node[attribute, below=1.3cm of fmt, xshift=0.9cm, font=\small] (f2) {аудио, видео};
-\draw[thin] (fmt) -- (f1); \draw[thin] (fmt) -- (f2);
-
-\node[attribute, below=0.5cm of str, xshift=-0.9cm, font=\small] (t1) {структ.};
-\node[attribute, below=1.3cm of str, xshift=0.9cm, font=\small] (t2) {неструкт.};
-\draw[thin] (str) -- (t1); \draw[thin] (str) -- (t2);
-
-\end{tikzpicture}
-\end{center}
-
-Дополнительно данные классифицируются
-по характеру изменения во времени.
-
-\end{frame}
-
-
-% --- По источнику ---
-\begin{frame}{Откуда берутся данные}
-
-\small
-
-\begin{table}
-
-\centering
-
-\begin{tabular}{>{\bfseries}p{0.3\textwidth}|p{0.55\textwidth}}
-
-\toprule
-
-Источник & Примеры \\
-
-\midrule
-
-Наблюдения & датчики, опросы, измерения \\
-
-Эксперименты & результаты лабораторных экспериментов \\
-
-Моделирование & результаты математических моделей \\
-
-Результаты обработки & статистика, средние значения, прогнозы \\
-
-Справочные данные & классификаторы, справочники \\
-
-\bottomrule
-
-\end{tabular}
-
-\end{table}
-
-\vspace{0.4cm}
-
-\begin{center}
-
-\large
-
-Данные $\rightarrow$ Обработка $\rightarrow$ Новые данные
-
-\end{center}
-
-\end{frame}
-
-
-% --- По формату ---
-
-\begin{frame}{В каком виде представлены данные}
-
-\begin{itemize}
-
-    \item \textbf{Текст} — документы, сообщения, описания;
-    
-    \item \textbf{Числа} — измерения, оценки, статистика;
-    
-    \item \textbf{Изображения} — фотографии, схемы, рисунки;
-    
-    \item \textbf{Аудио и видео} — звукозаписи, фильмы, видеозаписи;
-    
-    \item \textbf{Файлы} — PDF, архивы, программы и другие данные.
-
-\end{itemize}
-
-\vspace{0.4cm}
-
-\begin{alertblock}{Важно}
-
-Формат показывает, \textbf{в каком виде записаны данные}, но не объясняет их смысл.
-
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Структурированность ---
-
-\begin{frame}{Как организованы данные}
-
-\small
-
-\begin{table}
-
-\centering
-
-\begin{tabular}{>{\bfseries}p{0.28\textwidth}|p{0.30\textwidth}|p{0.30\textwidth}}
-
-\toprule
-
-Тип & Что это значит & Примеры \\
-
-\midrule
-
-Структурированные &
-имеют заранее заданную структуру &
-таблицы, базы данных \\
-
-Полуструктурированные &
-структура есть, но она более гибкая &
-JSON, XML \\
-
-Неструктурированные &
-нет заранее заданной структуры &
-текст, фото, видео \\
-
-\bottomrule
-
-\end{tabular}
-
-\end{table}
-
-\vspace{0.4cm}
-
-\begin{alertblock}{Главное}
-
-Чем сложнее структура данных, тем больше вариантов их хранения и обработки.
-
-\end{alertblock}
-
-\end{frame}
-
-
-\begin{frame}{Как изменяются данные со временем}
-
-\begin{columns}[T]
-\column{0.32\textwidth}
-\begin{block}{\centering Неизменяемые}
-\small
-После создания данные \textbf{не меняются}.
-
-\vspace{0.25cm}
-\textit{Примеры:}\\
-архив,\\
-результат эксперимента
-\end{block}
-
-\column{0.32\textwidth}
-\begin{block}{\centering Растущие}
-\small
-Старые данные сохраняются,\\
-добавляются \textbf{новые}.
-
-\vspace{0.25cm}
-\textit{Примеры:}\\
-журнал событий,\\
-история измерений
-\end{block}
-
-\column{0.32\textwidth}
-\begin{block}{\centering Изменяемые}
-\small
-Существующие данные\\
-могут \textbf{изменяться} или удаляться.
-
-\vspace{0.25cm}
-\textit{Примеры:}\\
-профиль пользователя
-\end{block}
-\end{columns}
-
-\vspace{0.6cm}
-
-\begin{alertblock}{Почему это важно?}
-Способ изменения данных напрямую влияет на их хранение, обновление и резервное копирование.
-\end{alertblock}
-
-\end{frame}
-
-
-\begin{frame}{Большие данные (Big Data)}
-
-\begin{block}{Определение}
-Термин \textbf{Big Data} обозначает данные, 
-\textbf{объём}, \textbf{разнообразие}, \textbf{скорость поступления}
-или другие характеристики которых создают существенные
-требования к традиционным методам их обработки и хранения.
-\end{block}
-
-\vspace{0.6cm}
-
-\begin{center}
-\large\textbf{Примеры источников}
-\end{center}
-
-\vspace{0.2cm}
-
-\begin{columns}[T]
-
-\column{0.32\textwidth}
-\begin{itemize}
-    \item транзакции
-    \item журналы событий
-\end{itemize}
-
-\column{0.32\textwidth}
-\begin{itemize}
-    \item сенсорные данные
-    \item социальные данные
-\end{itemize}
-
-\column{0.32\textwidth}
-\begin{itemize}
-    \item изображения
-    \item видео
-\end{itemize}
-
-\end{columns}
-
-\end{frame}
-
-
-% =========================================================
-% ЧАСТЬ III. ЖИЗНЕННЫЙ ЦИКЛ И ЗАЩИТА ДАННЫХ
-% =========================================================
-
-% --- Жизненный цикл (TikZ, цикл) ---
-\begin{frame}{Жизненный цикл данных}
-
-Данные существуют не только в момент их записи в базу.
-
-\begin{center}
-\begin{tikzpicture}[node distance=2.2cm]
-
-\node[phase] (plan) at (90:2.6cm) {Планирование};
-\node[phase] (collect) at (18:2.6cm) {Сбор};
-\node[phase] (process) at (-54:2.6cm) {Обработка\\и анализ};
-\node[phase] (preserve) at (-126:2.6cm) {Сохранение\\и публикация};
-\node[phase] (reuse) at (162:2.6cm) {Повторное\\использование};
-
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (plan) -- (collect);
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (collect) -- (process);
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (process) -- (preserve);
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (preserve) -- (reuse);
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (reuse) -- (plan);
-
-\end{tikzpicture}
-\end{center}
-
-\footnotesize
-\begin{center}
-Согласно UK Data Service, жизненный цикл исследовательских
-данных представляется этапами:
-plan~$\rightarrow$~collect~$\rightarrow$~process and analyse~$\rightarrow$~preserve and share~$\rightarrow$~reuse.
-\end{center}
-
-\end{frame}
-
-
-% --- Этапы кратко ---
-\begin{frame}{Ключевые этапы жизненного цикла}
-
-\small
-\begin{table}
-\centering
-\begin{tabular}{>{\bfseries}p{0.28\textwidth}|p{0.6\textwidth}}
-\toprule
-Этап & Суть\\
-\midrule
-Планирование &
-определяются форматы, место хранения, доступ,
-требования к защите — \textit{до} создания данных\\
-Сбор &
-данные регистрируются, классифицируются,
-снабжаются метаданными\\
-Обработка и анализ &
-проверка, очистка, преобразование, агрегация;
-результат — производные данные\\
-Документирование &
-сохраняются сведения о происхождении, структуре,
-методике получения, версиях\\
-Сохранение и доступ &
-резервные и архивные копии, контроль целостности,
-управление правами доступа\\
-Повторное использование &
-хорошо документированные данные используются
-в новых задачах\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\end{frame}
-
-
-% --- Защита данных: CIA ---
-\begin{frame}{Защита данных: конфиденциальность, целостность, доступность}
-
-\begin{center}
-\begin{tikzpicture}[node distance=1.6cm and 1.6cm]
-\node[entity, fill=svfuDark, text=white] (root) {Защита данных};
-\node[catbox, below=1.2cm of root, xshift=-3.6cm] (c) {Конфиденциальность};
-\node[catbox, below=1.2cm of root] (i) {Целостность};
-\node[catbox, below=1.2cm of root, xshift=3.6cm] (a) {Доступность};
-\draw[thick, svfuDark] (root) -- (c);
-\draw[thick, svfuDark] (root) -- (i);
-\draw[thick, svfuDark] (root) -- (a);
-\end{tikzpicture}
-\end{center}
-
-\begin{itemize}
-  \item \textbf{Конфиденциальность} — доступ получают только
-        уполномоченные субъекты;
-  \item \textbf{Целостность} — данные не должны изменяться
-        несанкционированным образом;
-  \item \textbf{Доступность} — уполномоченные пользователи
-        должны получать данные тогда, когда это необходимо.
-\end{itemize}
-
-\end{frame}
-
-
-% =========================================================
-% ЧАСТЬ IV. БАЗА ДАННЫХ И СУБД
-% =========================================================
-
-% --- Что такое БД ---
-\begin{frame}{Что такое база данных}
-
-\begin{block}{Определение (по терминологии NIST)}
-\textbf{База данных} рассматривается как репозиторий
-информации или данных; такое определение не ограничивает
-базу данных только традиционной реляционной системой.
-\end{block}
-
-\vspace{0.4cm}
-
-\begin{alertblock}{Основное положение}
-База данных не тождественна таблице.
-Таблица — лишь один из возможных способов
-представления структурированных данных.
-\end{alertblock}
-
-\end{frame}
-
-
-% --- БД в АИС ---
-\begin{frame}{База данных как основа информационной системы}
-
-Современные информационные системы работают
-со структурированными данными: интернет-магазин,
-банковская система, корпоративная CRM, социальная сеть.
-
-\vspace{0.4cm}
-
-\begin{center}
-\Large
-\textbf{Приложение}
-$\longleftrightarrow$
-\textbf{База данных}
-\end{center}
-
-\vspace{0.4cm}
-
-\textbf{АИС} (автоматизированная информационная система) —
-совокупность программно-технических средств и персонала,
-обеспечивающая сбор, хранение, обработку и предоставление
-информации. БД — важнейший, но не единственный компонент АИС.
-
-\end{frame}
-
-
-% --- Наивный подход ---
-\begin{frame}{Наивный подход и его проблемы}
-
-\begin{center}
-\large
-Создать таблицы
-$\rightarrow$
-Добавить столбцы
-$\rightarrow$
-Записать данные
-\end{center}
-
-\vspace{0.3cm}
-
-На небольшом примере такой подход может работать,
-но при росте системы появляются проблемы:
-
-\begin{itemize}
-  \item дублирование и противоречивые значения;
-  \item аномалии вставки, обновления и удаления;
-  \item сложность изменения структуры;
-  \item падение производительности запросов.
-\end{itemize}
-
-\vspace{0.3cm}
-
-\begin{alertblock}{Главная мысль}
-Ошибки в структуре данных часто обнаруживаются
-только после того, как система уже начала работать.
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Зачем нужно проектирование ---
-\begin{frame}{Почему проектирование необходимо?}
-
-\begin{center}
-\Large
-\textbf{Проектирование БД $\neq$ CREATE TABLE}
-\end{center}
-
-\vspace{0.5cm}
-
-Проектирование отвечает на вопросы: какие данные хранить,
-как они связаны, какие ограничения существуют,
-какие операции будут выполняться и как система
-будет расти и масштабироваться.
-
-\vspace{0.4cm}
-
-\begin{block}{Определение}
-\textbf{Проектирование базы данных} — процесс определения
-структуры, взаимосвязей, ограничений и способов хранения
-данных в соответствии с требованиями информационной системы.
-\end{block}
-
-\end{frame}
-
-
-% --- БД и СУБД ---
-\begin{frame}{База данных и СУБД}
-
-\begin{table}
-\centering
-\begin{tabular}{>{\bfseries}p{0.25\textwidth}|p{0.62\textwidth}}
-\toprule
-Понятие & Определение\\
-\midrule
-База данных &
-структурированный (или иначе организованный) репозиторий данных\\
-СУБД &
-программное обеспечение для создания,
-хранения и обработки БД\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\vspace{0.4cm}
-
-Примеры СУБД:
-
-\begin{center}
-PostgreSQL \quad Microsoft Access \quad MySQL \quad Oracle Database
-\end{center}
-
-\end{frame}
-
-
-% --- Функции СУБД ---
-\begin{frame}{Зачем нужна СУБД и что она делает}
-
-Просто хранить файлы с данными недостаточно.
-
-\vspace{0.2cm}
-\small
-\begin{table}
-\centering
-\begin{tabular}{p{0.32\textwidth}|p{0.52\textwidth}}
-\toprule
-\textbf{Функция} & \textbf{Суть}\\
-\midrule
-Хранение & таблицы, индексы, страницы\\
-Транзакции & атомарное выполнение операций\\
-Журнализация & восстановление после сбоев\\
-Целостность & проверка ограничений\\
-Безопасность & управление доступом и правами\\
-Оптимизация & эффективное выполнение запросов\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\end{frame}
-
-
-% --- Метаданные и словарь данных ---
-\begin{frame}{Метаданные и словарь данных}
-
-\textbf{Метаданные} — данные, описывающие структуру,
-свойства и правила использования других данных
-(«данные о данных»): имена таблиц и столбцов,
-типы данных, ключи, ограничения, права доступа.
-
-\vspace{0.4cm}
-
-\textbf{Словарь данных} (Data Dictionary) —
-компонент СУБД, содержащий метаданные о структуре БД.
-
-\vspace{0.2cm}
-В PostgreSQL:
-
-\begin{center}
-\texttt{pg\_catalog}
-\qquad
-\texttt{information\_schema}
-\end{center}
-
-\end{frame}
-
-
-% =========================================================
-% ЧАСТЬ V. МОДЕЛИ ПРЕДСТАВЛЕНИЯ И ХРАНЕНИЯ ДАННЫХ
-% =========================================================
-
-% --- Три подхода: обзор (TikZ) ---
-\begin{frame}{Способы представления и хранения данных}
-
-\begin{center}
-\begin{tikzpicture}[node distance=1.2cm and 1.4cm]
-\node[entity, fill=svfuDark, text=white] (root) {Данные};
-\node[catbox, below=1.3cm of root, xshift=-4.5cm] (t) {Табличное\\представление};
-\node[catbox, below=1.3cm of root, xshift=-1.40cm] (d) {Документное\\представление};
-
-\node[catbox, below=1.3cm of root, xshift=1.60cm] (f) {Файловое\\хранение};
-\node[catbox, below=1.3cm of root, xshift=4.5cm]
-    (v) {Векторное\\представление};
-
-\draw[thick, svfuDark] (root) -- (v);
-
-\node[attribute, below=0.6cm of v, font=\scriptsize]
-    (v2) {Vector DB};
-
-\draw[thin] (v) -- (v2);
-\draw[thick, svfuDark] (root) -- (t);
-\draw[thick, svfuDark] (root) -- (d);
-\draw[thick, svfuDark] (root) -- (f);
-\node[attribute, below=0.6cm of t, font=\scriptsize] (t2) {SQL};
-\node[attribute, below=0.6cm of d, font=\scriptsize] (d2) {JSON};
-\node[attribute, below=0.6cm of f, font=\scriptsize] (f2) {Object Storage};
-\draw[thin] (t) -- (t2); \draw[thin] (d) -- (d2); \draw[thin] (f) -- (f2);
-
-\end{tikzpicture}
-\end{center}
-
-Важно различать \textbf{модель представления данных}
-и \textbf{физическое средство хранения} — это не одно и то же.
-
-\end{frame}
-
-
-% --- Реляционное представление ---
-\begin{frame}{Реляционное представление данных}
-
-В реляционной модели данные представлены
-в виде \textbf{отношений}; практическим представлением
-отношения является таблица.
-
-\vspace{0.3cm}
-
-\begin{center}
-\begin{tabular}{|c|c|c|}
-\hline
-id & name & group\_id\\
-\hline
-1 & Иванов & 101\\
-2 & Петров & 101\\
-3 & Сидоров & 102\\
-\hline
-\end{tabular}
-\end{center}
-
-\vspace{0.3cm}
-
-Табличная модель характеризуется фиксированной структурой,
-атрибутами, идентификацией экземпляров, связями
-и ограничениями целостности.
-
-\end{frame}
-
-
-% --- JSON ---
-\begin{frame}[fragile]{JSON: определение и структура}
-
-\begin{block}{Определение (RFC 8259)}
-JSON — лёгкий текстовый, независимый от языка формат
-обмена данными, предназначенный для переносимого
-представления структурированных данных.
-\end{block}
-
-\vspace{0.3cm}
-\small
-\begin{verbatim}
-{
-  "id": 101,
-  "name": "Иванов Иван",
-  "group": { "number": "ПМИ-25", "course": 2 },
-  "subjects": ["Математика", "Программирование"]
-}
-\end{verbatim}
-\normalsize
-
-JSON поддерживает объекты, массивы, строки, числа,
-логические значения и \texttt{null}.
-
-\end{frame}
-
-
-% --- NoSQL vs JSON ---
-\begin{frame}{NoSQL и JSON: важное различие}
-
-\textbf{NoSQL} — широкий класс систем управления данными,
-не ограниченных классической реляционной моделью.
-В курсе рассматривается прежде всего документная модель
-как один из вариантов нереляционного представления.
-
-\vspace{0.5cm}
-
-\begin{alertblock}{Принципиально важно}
-JSON и NoSQL — не синонимы.\\[2pt]
-JSON — \textbf{формат} представления данных.\\
-NoSQL — более широкий \textbf{класс подходов}
-к организации и управлению данными.
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Документное представление ---
-\begin{frame}{Документное представление}
-
-При документном подходе совокупность связанных атрибутов
-объекта представляется единым документом с вложенной
-структурой.
-
-\vspace{0.3cm}
-
-\begin{itemize}
-  \item допускает различия в структуре отдельных документов;
-  \item естественно представляет иерархические данные;
-  \item приближает представление данных к структуре
-        объектов приложения.
-\end{itemize}
-
-\vspace{0.3cm}
-
-\begin{alertblock}{Оборотная сторона}
-Гибкость структуры переносит часть ответственности
-за согласованность данных на уровень проектирования
-и программного обеспечения.
-\end{alertblock}
-
-\end{frame}
-
-% --- Векторное представление ---
-
-\begin{frame}{Векторное представление данных}
-
-Некоторые объекты удобно описывать не набором отдельных полей, а \textbf{вектором признаков} в многомерном пространстве.
-
-\[\Large
-\mathbf{x} =
-(x_1,x_2,\ldots,x_n)
-\]
-\normalsize
-В задачах машинного обучения и поиска вектор может представлять:
-
-\begin{itemize}
-
-    \item текстовый документ;
-
-    \item изображение;
-
-    \item аудиозапись;
-
-    \item профиль пользователя;
-
-    \item результат работы нейронной сети.
-
-\end{itemize}
-
-\end{frame}
-
-
-\begin{frame}{Сравнение способов представления данных}
-
-\small
-
-\begin{table}
-
-\centering
-
-\begin{tabular}{p{0.23\textwidth}|p{0.21\textwidth}|p{0.21\textwidth}|p{0.21\textwidth}}
-
-\toprule
-
-Характеристика &
-Табличное &
-Документное &
-Векторное \\
-
-\midrule
-
-Основная единица &
-строка /
-отношение &
-документ &
-вектор \\
-
-Структура &
-явная схема &
-гибкая /
-иерархическая &
-фиксированная
-размерность \\
-
-Основная операция &
-запрос по атрибутам &
-доступ к документу &
-поиск по близости \\
-
-Типичный пример &
-PostgreSQL &
-MongoDB &
-Vector DB \\
-
-\bottomrule
-
-\end{tabular}
-
-\end{table}
-
-\vspace{0.3cm}
-
-\begin{alertblock}{Важно}
-
-Это не взаимоисключающие технологии. Одна информационная система может одновременно использовать таблицы, документы, файлы и векторные представления.
-
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Файловое и объектное хранение ---
-\begin{frame}{Файловое и объектное хранение}
-
-Для больших бинарных объектов (фото, видео, аудио, PDF,
-архивы) используются файловые или объектные хранилища.
-
-\vspace{0.3cm}
-
-\begin{block}{Определение (по документации Amazon S3)}
-Объект объектного хранилища включает как минимум
-\textbf{содержимое} и \textbf{ключ}, по которому он
-идентифицируется; также могут использоваться
-\textbf{метаданные}. Объекты размещаются в контейнерах
-(bucket).
-\end{block}
-
-\vspace{0.3cm}
-
-\begin{center}
-Bucket $\rightarrow$ Object (Key + Data + Metadata)
-\end{center}
-
-\end{frame}
-
-
-% --- Один объект — несколько структур ---
-\begin{frame}{Один объект — несколько структур хранения}
-
-\begin{center}
-\begin{tikzpicture}[node distance=1cm and 1.6cm]
-\node[entity] (s) {Студент};
-\node[catbox, below=1.1cm of s, xshift=-3.6cm] (a) {id, ФИО, группа};
-\node[catbox, below=1.1cm of s] (b) {настройки};
-\node[catbox, below=1.1cm of s, xshift=3.6cm] (c) {фотография};
-\draw[thick] (s) -- (a); \draw[thick] (s) -- (b); \draw[thick] (s) -- (c);
-\node[attribute, below=0.6cm of a, font=\scriptsize] (a2) {таблица};
-\node[attribute, below=0.6cm of b, font=\scriptsize] (b2) {JSON};
-\node[attribute, below=0.6cm of c, font=\scriptsize] (c2) {файл / объект};
-\draw[thin] (a) -- (a2); \draw[thin] (b) -- (b2); \draw[thin] (c) -- (c2);
-\end{tikzpicture}
-\end{center}
-
-\begin{alertblock}{Вывод}
-Один объект предметной области может быть представлен несколькими структурами хранения одновременно.
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Критерии выбора хранения ---
-\begin{frame}{Критерии выбора способа хранения}
-
-\begin{itemize}
-  \item структура данных: фиксированная или изменяемая;
-  \item вложенность: плоская или иерархическая;
-  \item объём: KB, MB, GB, TB;
-  \item частота изменения: редкая или частая;
-  \item характер доступа: по идентификатору, по атрибутам,
-        по связям, последовательное чтение;
-  \item требования к целостности: строгие ограничения
-        или более гибкая структура.
-\end{itemize}
-
-\vspace{0.3cm}
-
-\begin{block}{Вывод}
-Место и способ хранения выбираются исходя
-из свойств данных, а не наоборот.
-\end{block}
-
-\end{frame}
-
-
-% =========================================================
-% ЧАСТЬ VI. ПРЕДМЕТНАЯ ОБЛАСТЬ И ER-МОДЕЛИРОВАНИЕ
-% =========================================================
-
-% --- Предметная область ---
-\begin{frame}{Предметная область}
-
-\textbf{Предметная область} — часть реального мира
-(фрагмент, рассматриваемый в рамках конкретной задачи
-моделирования), информацию о которой необходимо
-хранить и обрабатывать.
-
-\vspace{0.4cm}
-
-\begin{center}
-\Large
-университет \quad магазин \quad библиотека \quad больница
-\end{center}
-
-\vspace{0.4cm}
-
-Первый шаг проектирования — \textbf{не SQL},
-а анализ предметной области: какие объекты существуют,
-какими характеристиками обладают, какие действия
-выполняются, как объекты связаны.
-
-\end{frame}
-
-
-% --- Сущность / Атрибут / Связь ---
-\begin{frame}{Сущность, атрибут, связь}
-
-\begin{itemize}
-  \item \textbf{Сущность} — значимый объект предметной
-        области, сведения о котором должны быть
-        представлены в информационной системе.
-  \item \textbf{Атрибут} — характеристика сущности.
-  \item \textbf{Связь} — отношение между сущностями
-        предметной области.
-\end{itemize}
-
-\vspace{0.4cm}
-
-\begin{center}
-\Large
-Студент
-$\xrightarrow{\text{обучается в}}$
-Группа
-\end{center}
-
-\begin{center}
-\Large
-Студент
-$\xrightarrow{\text{получает}}$
-Оценка
-\end{center}
-
-\end{frame}
-
-
-% --- Концептуальная модель ---
-\begin{frame}{Концептуальная модель}
-
-Концептуальная модель описывает предметную область
-\textbf{независимо от конкретной СУБД}.
-
-\vspace{0.4cm}
-
-На этом этапе неважно:
-
-\begin{itemize}
-  \item PostgreSQL или Access;
-  \item какой тип данных используется;
-  \item каким SQL-запросом это будет реализовано.
-\end{itemize}
-
-\vspace{0.4cm}
-
-\begin{alertblock}{Главное}
-Сначала понять предметную область,
-а затем выбирать техническую реализацию.
-\end{alertblock}
-
-\end{frame}
-
-
-% --- ER-модель ---
-\begin{frame}{ER-модель}
-
-\begin{block}{Определение}
-\textbf{ER-модель} (Entity--Relationship Model) была
-предложена Питером Ченом (Peter Chen) как концептуальная
-модель данных, предназначенная для представления
-семантики объектов предметной области и отношений
-между ними при проектировании баз данных.
-\end{block}
-
-\vspace{0.4cm}
-
-\begin{center}
-\Large
-Сущности
-\quad+\quad
-Атрибуты
-\quad+\quad
-Связи
-\end{center}
-
-Графическое представление — \textbf{ER-диаграмма (ERD)}.
-
-\end{frame}
-
-
-% --- Элементы ER ---
-\begin{frame}{Базовые элементы ER-диаграммы (нотация Чена)}
-
-\begin{table}
-\centering
-\begin{tabular}{>{\bfseries}p{0.3\textwidth}|p{0.45\textwidth}}
-\toprule
-Элемент & Значение\\
-\midrule
-Прямоугольник & сущность\\
-Овал & атрибут\\
-Ромб & связь\\
-Линия & соединение элементов\\
-Подчёркивание атрибута & первичный ключ\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\vspace{0.4cm}
-
-ER-диаграмма позволяет проще обсуждать структуру
-с заказчиком и находить ошибки \textbf{до} того,
-как система начала работать.
-
-\end{frame}
-
-
-% --- Пример ER-модели (TikZ, Чен) ---
-\begin{frame}{Пример ER-диаграммы (нотация Чена)}
-
-\begin{center}
-\resizebox{0.95\textwidth}{!}{%
-\begin{tikzpicture}[node distance=0.8cm and 1cm]
-
-\node[entity] (group) {\large{Группа}};
-\node[relationship, right=of group] (r1) {\large{обучается}};
-\node[entity, right=of r1] (student) {\large{Студент}};
-\node[relationship, right=of student] (r2) {\large{получает}};
-\node[entity, right=of r2] (grade) {\large{Оценка}};
-
-\draw[thick] (group) -- (r1) node[card, midway] {\large{1}};
-\draw[thick] (r1) -- (student) node[card, midway] {\large{N}};
-\draw[thick] (student) -- (r2) node[card, midway] {\large{1}};
-\draw[thick] (r2) -- (grade) node[card, midway] {\large{N}};
-
-\node[attribute, below=1cm of group, xshift=-1.0cm] (a1) {\large{номер}};
-\node[attribute, below=1cm of group, xshift=1.2cm] (a2) {\large{курс}};
-\draw (group) -- (a1);
-\draw (group) -- (a2);
-
-\node[attribute, below=1cm of student, xshift=-0.9cm] (a3) {\large{\underline{номер}}};
-\node[attribute, below=1cm of student, xshift=1.2cm] (a4) {\large{ФИО}};
-\draw (student) -- (a3);
-\draw (student) -- (a4);
-
-\node[attribute, below=1cm of grade, xshift=-0.9cm] (a5) {\large{балл}};
-\node[attribute, below=1cm of grade, xshift=1.2cm] (a6) {\large{дата}};
-\draw (grade) -- (a5);
-\draw (grade) -- (a6);
-
-\end{tikzpicture}
-}
-\end{center}
-
-\vspace{0.2cm}
-\begin{itemize}
-  \item прямоугольник — сущность, ромб — связь, овал — атрибут;
-  \item подчёркивание атрибута — первичный ключ.
-\end{itemize}
-
-\end{frame}
-
-
-% --- Crow's Foot ---
-\begin{frame}{Нотация Crow's Foot}
-
-Более компактная нотация,
-часто используемая в практическом проектировании.
-
-\begin{center}
-\resizebox{0.72\textwidth}{!}{%
-\begin{tikzpicture}
-\node[entity, minimum width=3cm] (group) {Группа};
-\node[entity, minimum width=3cm, right=6cm of group] (student) {Студент};
-
-\draw[very thick, svfuDark] (group.east) -- (student.west);
-
-\draw[very thick, svfuDark] ($(group.east)+(0.5,0.3)$) -- ($(group.east)+(0.5,-0.3)$);
-\draw[very thick, svfuDark] ($(group.east)+(0.8,0.3)$) -- ($(group.east)+(0.8,-0.3)$);
-
-\draw[very thick, svfuDark] ($(student.west)+(-0.7,0)$) -- ($(student.west)+(0,0.3)$);
-\draw[very thick, svfuDark] ($(student.west)+(-0.7,0)$) -- ($(student.west)+(0,-0.3)$);
-\draw[very thick, svfuDark] ($(student.west)+(-0.7,0)$) -- (student.west);
-
-\draw[very thick, svfuDark, fill=white] ($(student.west)+(-1.05,0)$) circle (0.16);
-
-\node[above, font=\small] at ($(group.east)+(0.65,0.45)$) {один};
-\node[above, font=\small] at ($(student.west)+(-0.35,0.45)$) {ноль или много};
-\end{tikzpicture}
-}
-\end{center}
-
-\begin{itemize}
-  \item двойная чёрточка — «ровно один»;
-  \item окружность — необязательность связи («ноль»);
-  \item «воронья лапка» — «много».
-\end{itemize}
-
-\end{frame}
-
-
-% --- Типы связей ---
-\begin{frame}{Типы связей (кардинальность)}
-
-\begin{table}
-\centering
-\begin{tabular}{>{\bfseries}p{0.25\textwidth}|p{0.45\textwidth}}
-\toprule
-Тип & Пример\\
-\midrule
-1:1 & Студент — Пропуск (паспорт — человек)\\
-1:N & Группа — Студенты\\
-N:M & Студенты — Дисциплины\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\vspace{0.4cm}
-
-На практике особенно важна связь
-\textbf{многие-ко-многим} — она преобразуется
-в отдельную (связующую) таблицу.
-
-\end{frame}
-
-
-% --- Полная ER-диаграмма курса ---
-\begin{frame}{Полная ER-диаграмма: предметная область «Университет»}
-
-\begin{center}
-\resizebox{0.92\textwidth}{!}{%
-\begin{tikzpicture}[node distance=2.6cm and 4.0cm]
-
-\node[entity] (group) {Группа};
-\node[entity, right=of group] (student) {Студент};
-\node[entity, right=of student] (grade) {Оценка};
-\node[entity, below=of grade] (discipline) {Дисциплина};
-\node[entity, below=of group] (teacher) {Преподаватель};
-
-\node[relationship] (r1) at ($(group)!0.5!(student)$) {\large{обучается}};
-\node[relationship] (r2) at ($(student)!0.5!(grade)$) {\large{получает}};
-\node[relationship] (r3) at ($(grade)!0.5!(discipline)$) {\large{по}};
-\node[relationship] (r4) at ($(teacher)!0.5!(discipline)$) {\large{ведёт}};
-
-\draw[thick] (group) -- (r1) node[card, midway]  {\large{1}};
-\draw[thick] (r1) -- (student) node[card, midway]{\large{N}};
-\draw[thick] (student) -- (r2) node[card, midway]{\large{1}};
-\draw[thick] (r2) -- (grade) node[card, midway]  {\large{N}};
-\draw[thick] (grade) -- (r3) node[card, midway]  {\large{N}};
-\draw[thick] (r3) -- (discipline) node[card, midway]{\large{1}};
-\draw[thick] (teacher) -- (r4) node[card, midway] {\large{1}};
-\draw[thick] (r4) -- (discipline) node[card, midway] {\large{N}};
-
-\end{tikzpicture}
-}
-\end{center}
-
-\begin{center}
-Эта диаграмма — результат анализа предметной области
-и отправная точка для логического проектирования.
-\end{center}
-
-\end{frame}
-
-
-% --- ER-модель vs модель хранения ---
-\begin{frame}{ER-модель и модель хранения — не одно и то же}
-
-\begin{center}
-\begin{tikzpicture}[node distance=1cm and 1.6cm]
-\node[entity] (dom) {Предметная\\область};
-\node[entity, below=1.1cm of dom] (er) {ER-модель};
-\node[catbox, below=1.3cm of er, xshift=-3.6cm] (t) {Таблицы};
-\node[catbox, below=1.3cm of er] (j) {JSON};
-\node[catbox, below=1.3cm of er, xshift=3.6cm] (f) {Файлы};
-\draw[thick] (dom) -- (er);
-\draw[thick] (er) -- (t); \draw[thick] (er) -- (j); \draw[thick] (er) -- (f);
-\end{tikzpicture}
-\end{center}
-
-\begin{alertblock}{Важно}
-ER-диаграмма не является таблицей и не определяет
-автоматически использование SQL или NoSQL —
-она описывает структуру и семантику предметной области.
-\end{alertblock}
-
-\end{frame}
-
-
-% =========================================================
-% ЧАСТЬ VII. ОТ МОДЕЛИ К РЕАЛИЗАЦИИ
-% =========================================================
-
-% --- ANSI/SPARC (TikZ) ---
-\begin{frame}{Трёхуровневая архитектура ANSI/SPARC}
-
-Это не этапы проектирования,
-а архитектурная модель самой СУБД.
-
-\begin{center}
-\begin{tikzpicture}[node distance=0.6cm]
-\node[layer] (ext) {Внешний уровень\\ \footnotesize представления пользователей};
-\node[layer, below=of ext] (con) {Концептуальный уровень\\ \footnotesize логическая структура БД};
-\node[layer, below=of con] (int) {Внутренний уровень\\ \footnotesize физическое хранение};
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (ext) -- (con);
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent] (con) -- (int);
-\end{tikzpicture}
-\end{center}
-
-\begin{center}
-Цель — \textbf{независимость данных}.
-\end{center}
-
-\end{frame}
-
-
-% --- Три уровня подробнее ---
-\begin{frame}{Три уровня подробнее}
-
-\begin{itemize}
-  \item \textbf{Внешний} — как данные видит конкретный
-        пользователь или приложение (студент видит свои
-        оценки, деканат — статистику факультета).
-        В PostgreSQL этому соответствует \texttt{VIEW}.
-  \item \textbf{Концептуальный} — единое логическое описание
-        всей БД: сущности, атрибуты, связи, ограничения.
-  \item \textbf{Внутренний} — как данные физически хранятся:
-        файлы, страницы, индексы, буферы.
-\end{itemize}
-
-\vspace{0.3cm}
-
-\begin{alertblock}{Главная идея}
-Пользователю не нужно знать,
-в каких физических страницах лежит строка таблицы.
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Независимость данных ---
-\begin{frame}{Независимость данных}
-
-\begin{table}
-\centering
-\begin{tabular}{p{0.3\textwidth}|p{0.58\textwidth}}
-\toprule
-\textbf{Тип} & \textbf{Что позволяет}\\
-\midrule
-Физическая &
-изменять способы хранения и индексы
-без переписывания приложений\\
-Логическая &
-изменять логическую структуру,
-сохраняя существующие представления\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\end{frame}
-
-
-% --- ER -> Table ---
-\begin{frame}[fragile]{От ER-диаграммы к таблицам}
-
-\begin{center}
-\resizebox{0.85\textwidth}{!}{%
-\begin{tikzpicture}
-\node[entity] (g) {Группа};
-\node[entity, right=2.2cm of g] (s) {Студент};
-\draw[thick] (g) -- (s) node[card, midway, above] {\large{1 : N}};
-
-\node[font=\Large, right=1.4cm of s] (arrow) {$\Rightarrow$};
-
-\node[entity, fill=white, right=1.4cm of arrow, yshift=0.7cm] (t1) {student\_group};
-\node[entity, fill=white, below=0.6cm of t1] (t2) {student};
-\draw[-{Latex[length=2mm]}, thick, svfuAccent] (t2.north) -- (t1.south)
-  node[midway, right, font=\tiny] {\large{group\_id (KEY)}};
-\end{tikzpicture}
-}
-\end{center}
-
-\small
-\begin{verbatim}
-CREATE TABLE student_group (
-    id SERIAL PRIMARY KEY,
-    name TEXT
-);
-
-CREATE TABLE student (
-    id SERIAL PRIMARY KEY,
-    name TEXT,
-    group_id INTEGER REFERENCES student_group(id)
-);
-\end{verbatim}
-
-\end{frame}
-
-
-% --- Ограничения целостности ---
-\begin{frame}{Ограничения целостности}
-
-Ограничения не позволяют БД
-перейти в некорректное состояние.
-
-\vspace{0.4cm}
-
-\begin{itemize}
-  \item \texttt{PRIMARY KEY} — уникальность и обязательность;
-  \item \texttt{FOREIGN KEY} — ссылочная целостность;
-  \item \texttt{NOT NULL} — обязательность значения;
-  \item \texttt{UNIQUE} — уникальность значения;
-  \item \texttt{CHECK} — произвольное условие на значение.
-\end{itemize}
-
-\vspace{0.3cm}
-
-\begin{alertblock}{Идея}
-Правила должны контролироваться самой БД,
-а не только программой пользователя.
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Слайд 1: Проблема ---
-\begin{frame}{Нормализация (введение)}
-
-\textbf{Нормализация} — процесс организации данных,
-направленный на уменьшение избыточности
-и устранение аномалий.
-
-\vspace{0.1cm}
-
-\begin{alertblock}{Плохой вариант}
-\begin{center}
-\begin{tabular}{|l|l|l|l|}
-\hline
-\textbf{student} & \textbf{name} & \textbf{discipline} & \textbf{teacher} \\
-\hline
-1 & Иванов & Математика & Сидоров \\
-1 & Иванов & Программирование & Козлов \\
-2 & Петров & Математика & Сидоров \\
-2 & Петров & Физика & Орлова \\
-\hline
-\end{tabular}
-\end{center}
-\end{alertblock}
-
-\vspace{-0.3cm}
-
-\begin{block}{Проблема}
-Один и тот же факт (преподаватель, название дисциплины) повторяется много раз.\\[0.2cm]
-Изменение одного факта требует изменения множества строк → риск противоречий и аномалий.
-\end{block}
-
-\end{frame}
-
-
-
-% --- Слайд 2: Решение ---
-\begin{frame}{Нормализация}
-\vspace{-0.5cm} 
-\begin{columns}[T]
-\begin{column}{0.48\textwidth}
-\begin{block}{Нормализованные таблицы}
-\small
-\begin{tabular}{|l|l|}
-\hline
-\textbf{student} & \\
-\hline
-id & name \\
-1 & Иванов \\
-2 & Петров \\
-\hline
-\end{tabular}
-
-\vspace{0.1cm}
-
-\begin{tabular}{|l|l|}
-\hline
-\textbf{discipline} & \\
-\hline
-id & title \\
-1 & Математика \\
-2 & Программирование \\
-3 & Физика \\
-\hline
-\end{tabular}
-
-\vspace{0.1cm}
-
-\begin{tabular}{|l|l|l|}
-\hline
-\textbf{grade} & & \\
-\hline
-student\_id & disc\_id & score \\
-1 & 1 & 5 \\
-1 & 2 & 5 \\
-2 & 1 & 4 \\
-2 & 3 & 3 \\
-\hline
-\end{tabular}
-\end{block}
-\end{column}
-
-\begin{column}{0.48\textwidth}
-\begin{exampleblock}{Преимущества}
-\begin{itemize}
-  \item Нет избыточности
-  \item Изменение одного факта — в одном месте
-  \item Легче поддерживать целостность
-  \item Уменьшается риск аномалий
-\end{itemize}
-\end{exampleblock}
-
-\vspace{0.4cm}
-
-\begin{alertblock}{Важно}
-Выделяют следующие нормальные формы: 1НФ,2НФ, 3НФ и т.д.
-\end{alertblock}
-\end{column}
-\end{columns}
-
-\end{frame}
-
-
-
-% --- Access vs PostgreSQL ---
-\begin{frame}{SQL, Access и PostgreSQL}
-
-SQL объединяет различные средства работы
-с реляционными БД (DDL, DML и другие).
-SQL не заменяет проектирование.
-
-\vspace{0.3cm}
-\small
-\begin{table}
-\centering
-\begin{tabular}{p{0.28\textwidth}|p{0.28\textwidth}|p{0.28\textwidth}}
-\toprule
- & \textbf{Access} & \textbf{PostgreSQL}\\
-\midrule
-Тип & настольная СУБД & серверная СУБД\\
-Интерфейс & сильный GUI & SQL + инструменты\\
-Масштаб & небольшие системы & крупные системы\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\normalsize
-
-\end{frame}
-
-
-% --- Инструменты ---
-\begin{frame}{Средства проектирования и администрирования}
-
-\begin{itemize}
-  \item \textbf{draw.io / diagrams.net} — универсальный
-        инструмент построения ER-диаграмм;
-  \item \textbf{pgModeler} — моделирование PostgreSQL;
-  \item \textbf{DBeaver} — работа с различными СУБД
-        и ER-диаграммами;
-  \item \textbf{pgAdmin} — графическое администрирование PostgreSQL;
-  \item \textbf{psql} — консольный клиент PostgreSQL (CLI).
-\end{itemize}
-
-\end{frame}
-
-
-% =========================================================
-% ЧАСТЬ VIII. ИТОГИ
-% =========================================================
-
-% --- Итоговая схема ---
-
-\begin{frame}{Итоговая схема проектирования}
-
-
-\vspace{0.6cm}
-
-\begin{center}
-
-\begin{tikzpicture}[node distance=1.2cm and 0.8cm]
-
-\node[phase] (domain) {Предметная\\область};
-\node[phase, right=of domain] (model) {ER-модель};
-\node[phase, right=of model] (design) {Логическая\\модель};
-\node[phase, right=of design] (db) {База данных};
-
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent]
-    (domain) -- (model);
-
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent]
-    (model) -- (design);
-
-\draw[-{Latex[length=2.5mm]}, thick, svfuAccent]
-    (design) -- (db);
-
-\end{tikzpicture}
-
-\end{center}
-
-\vspace{0.5cm}
-
-\begin{alertblock}{Главная идея}
-
-Сначала мы понимаем что нужно хранить, затем строим модель и только после этого реализуем базу данных.
-
-\end{alertblock}
-
-\end{frame}
-
-
-% --- Аналитический вывод ---
-\begin{frame}{Аналитический вывод: от данных к модели хранения}
-
-\begin{itemize}
-  \item Выбор способа хранения — \textbf{результат} анализа
-        данных, а не исходная точка проектирования.
-  \item Табличное, документное и файловое представления
-        не исключают друг друга и могут сочетаться
-        в одной системе.
-  \item ER-модель — семантическое описание предметной
-        области, не привязанное к конкретной технологии.
-  \item Разделение уровней (внешний / концептуальный /
-        внутренний) обеспечивает независимость данных
-        и гибкость системы при её росте.
-\end{itemize}
-
-\end{frame}
-
-
-% % --- Задание ---
-% \begin{frame}{Задание к следующей лекции}
-
-% Выберите предметную область.
-
-% \vspace{0.3cm}
-
-% Например:
-% \begin{itemize}
-%   \item университет;
-%   \item магазин;
-%   \item библиотека;
-%   \item кинотеатр.
-% \end{itemize}
-
-% \vspace{0.3cm}
-
-% Определите:
-% \begin{enumerate}
-%   \item сущности и их атрибуты;
-%   \item связи между сущностями и их кардинальность;
-%   \item какие сведения структурированы, а какие —
-%         естественнее представить документом или файлом.
-% \end{enumerate}
-
-% \vspace{0.3cm}
-
-% \textbf{Результат:} черновая ER-диаграмма.
-
-% \end{frame}
-
-
-
 
 
 % --- Спасибо ---

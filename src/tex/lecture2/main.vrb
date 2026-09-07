@@ -1,0 +1,20 @@
+\frametitle{Задание к следующей лекции}
+
+Возьмите предметную область и ER-диаграмму,
+разработанную к Лекции 1.
+
+\vspace{0.3cm}
+
+Напишите:
+\begin{enumerate}
+  \item команды \texttt{CREATE TABLE} (DDL) для 2--3 сущностей
+        вашей предметной области;
+  \item по одной команде \texttt{INSERT}, \texttt{SELECT},
+        \texttt{UPDATE} (DML) на эти таблицы.
+\end{enumerate}
+
+\vspace{0.3cm}
+
+\textbf{Результат:} черновой набор DDL/DML-команд —
+основа для первой лабораторной работы.
+

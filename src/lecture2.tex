@@ -1,0 +1,1091 @@
+\documentclass[aspectratio=169]{beamer}
+
+% =========================================================
+% Кодировка и язык
+% =========================================================
+\usepackage{fontspec}
+\usepackage[russian]{babel}
+\babelfont{rm}{Liberation Serif}
+\babelfont{sf}{Liberation Sans}
+\babelfont{tt}{DejaVu Sans Mono}
+
+% =========================================================
+% Математика
+% =========================================================
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+
+% =========================================================
+% Графика и таблицы
+% =========================================================
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+
+% =========================================================
+% TikZ
+% =========================================================
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, fit, backgrounds}
+
+% =========================================================
+% Тема
+% =========================================================
+\usetheme{default}
+\usecolortheme{default}
+
+% =========================================================
+% Цвета СВФУ
+% =========================================================
+\definecolor{svfuDark}{RGB}{10,40,90}
+\definecolor{svfuAccent}{RGB}{30,144,255}
+\definecolor{svfuLight}{RGB}{230,240,255}
+\definecolor{sqlLight}{RGB}{245,248,252}
+
+% =========================================================
+% Стили TikZ
+% =========================================================
+\tikzset{
+  entity/.style={
+    rectangle, draw=svfuDark, very thick, fill=svfuLight,
+    minimum width=3.0cm, minimum height=0.9cm,
+    font=\bfseries\small, align=center, rounded corners=1pt
+  },
+  relationship/.style={
+    diamond, draw=svfuDark, very thick, fill=svfuAccent!25,
+    aspect=2.4, font=\scriptsize, align=center, inner sep=1pt
+  },
+  module/.style={
+    rectangle, draw=svfuDark, very thick, fill=white,
+    minimum width=3.1cm, minimum height=0.95cm,
+    font=\footnotesize\bfseries, align=center, rounded corners=2pt
+  },
+  actor/.style={
+    rectangle, draw=svfuDark, thick, fill=svfuLight,
+    minimum width=2.6cm, minimum height=0.85cm,
+    font=\small\bfseries, align=center, rounded corners=4pt
+  },
+  cmd/.style={
+    rectangle, draw=svfuDark, thick, fill=sqlLight,
+    inner sep=5pt, font=\ttfamily\small, align=left
+  },
+  phase/.style={
+    rectangle, draw=svfuDark, thick, fill=svfuLight,
+    rounded corners=2pt, minimum width=2.5cm, minimum height=0.8cm,
+    font=\small\bfseries, align=center
+  }
+}
+
+% =========================================================
+% Основные цвета Beamer
+% =========================================================
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamercolor{structure}{fg=svfuDark}
+\setbeamercolor{alerted text}{fg=svfuDark}
+\setbeamercolor{frametitle}{bg=svfuDark,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{author}{fg=white}
+\setbeamercolor{date}{fg=white}
+\setbeamercolor{accent line}{bg=svfuAccent}
+\setbeamercolor{footline left}{bg=svfuDark,fg=white}
+\setbeamercolor{footline center}{bg=svfuDark!85,fg=white!80}
+\setbeamercolor{footline right}{bg=svfuDark!70,fg=white}
+\setbeamercolor{block title}{bg=svfuDark,fg=white}
+\setbeamercolor{block body}{bg=svfuLight,fg=black}
+
+% =========================================================
+% Шрифты и шаблоны
+% =========================================================
+\setbeamerfont{frametitle}{size=\large,series=\bfseries}
+\setbeamerfont{title}{size=\Large,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+
+\setbeamertemplate{frametitle}{%
+  \vspace*{-1pt}%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=3.2ex,dp=1.2ex,leftskip=10pt,sep=0pt]{frametitle}%
+    \usebeamerfont{frametitle}\insertframetitle
+  \end{beamercolorbox}%
+}
+
+\setbeamertemplate{footline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=0.4pt,dp=0pt]{accent line}\end{beamercolorbox}%
+  \hbox to \paperwidth{%
+    \begin{beamercolorbox}[wd=0.305\paperwidth,ht=3ex,dp=1.5ex,left,sep=0pt,leftskip=6ex]{footline left}
+      \textbf{СВФУ}
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=0.295\paperwidth,ht=3ex,dp=1.5ex,center,sep=0pt]{footline center}\end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=0.4\paperwidth,ht=3ex,dp=1.5ex,right,sep=0pt]{footline right}
+      \raggedleft\today\hspace{5ex}\insertframenumber\,/\,\inserttotalframenumber\hspace{6ex}
+    \end{beamercolorbox}%
+  }%
+}
+
+\setbeamertemplate{itemize item}{\color{svfuAccent}\small$\blacktriangleright$}
+\setbeamertemplate{itemize subitem}{\color{svfuAccent}\scriptsize$\blacktriangleright$}
+\setlength{\leftmargini}{1.5em}
+
+\newcommand{\codebox}[1]{%
+  \begin{center}
+  \fcolorbox{svfuDark}{sqlLight}{\begin{minipage}{0.90\textwidth}\vspace{2pt}\small\ttfamily #1\vspace{2pt}\end{minipage}}
+  \end{center}}
+
+\begin{document}
+
+% =========================================================
+% ТИТУЛ
+% =========================================================
+\begin{frame}[plain]
+  \vspace*{1cm}
+  \begin{center}
+    \colorbox{svfuDark}{%
+      \parbox[c][2.8cm][c]{0.86\paperwidth}{%
+        \centering
+        {\LARGE\color{white}Лекция 2. Системы управления базами данных и язык SQL}
+      }%
+    }
+  \end{center}
+  \vfill
+  \centering
+  {\normalsize Дисциплина: Методы и средства проектирования баз данных}\\[4pt]
+  {\small Составитель: Монастырев Егорий Егорьевич, М-ВТ-25}\\[4pt]
+  {\small Якутск, 2026}
+  \vfill
+\end{frame}
+
+% =========================================================
+% 1. ЦЕЛИ
+% =========================================================
+\begin{frame}{Что должно стать понятным после лекции}
+\begin{itemize}
+  \item чем СУБД отличается от самой базы данных и какую роль она выполняет;
+  \item из каких основных компонентов состоит СУБД и как проходит запрос;
+  \item как клиентское приложение взаимодействует с сервером базы данных;
+  \item что такое SQL и как его команды группируются по назначению;
+  \item чем отличаются DDL, DML, DCL и TCL;
+  \item как выглядят базовые операции PostgreSQL, которые будут использованы в лабораторной работе.
+\end{itemize}
+
+\vspace{0.25cm}
+\begin{alertblock}{Логика лекции}
+От устройства СУБД \;$\rightarrow$\; к языку SQL \;$\rightarrow$\; к конкретным командам.
+\end{alertblock}
+\end{frame}
+
+% =========================================================
+% 2. ПЕРЕХОД ОТ ЛЕКЦИИ 1
+% =========================================================
+\begin{frame}{Что мы уже знаем из лекции 1}
+\small
+В лекции 1 мы рассмотрели предметную область, данные и основные модели их представления,
+ER-модель и переход от предметной области к структуре базы данных.
+
+\vspace{0.35cm}
+\begin{center}
+\begin{tikzpicture}[node distance=0.35cm and 0.7cm]
+  \node[phase] (domain) {Предметная\\область};
+  \node[phase,right=of domain] (model) {Модель\\данных};
+  \node[phase,right=of model] (db) {База\\данных};
+  \node[phase,right=of db,minimum width=3.1cm] (dbms) {СУБД};
+  \draw[-{Latex[length=2.2mm]},thick,svfuAccent] (domain)--(model);
+  \draw[-{Latex[length=2.2mm]},thick,svfuAccent] (model)--(db);
+  \draw[-{Latex[length=2.2mm]},thick,svfuAccent] (db)--(dbms);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.3cm}
+\begin{alertblock}{Новая точка фокуса}
+Не повторяем построение ER-модели и архитектуру ANSI/SPARC. Теперь рассматриваем,
+\textbf{как СУБД реально обслуживает операции над уже спроектированной БД}.
+\end{alertblock}
+\end{frame}
+
+% =========================================================
+% 3. СУБД
+% =========================================================
+\begin{frame}{СУБД: не просто «хранилище таблиц»}
+\begin{block}{Определение}
+\textbf{СУБД} — программная система, предназначенная для определения структуры базы данных,
+хранения и обработки данных, управления доступом к ним, поддержания целостности,
+транзакционной обработки и восстановления после сбоев.
+\end{block}
+
+\vspace{0.35cm}
+\begin{itemize}
+  \item приложение формулирует операцию;
+  \item СУБД проверяет права и ограничения;
+  \item СУБД выбирает способ выполнения операции;
+  \item СУБД организует чтение или изменение данных;
+  \item результат возвращается клиенту.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Основные функции СУБД}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.31\textwidth}|p{0.57\textwidth}}
+\toprule
+\textbf{Функция} & \textbf{Задача}\\
+\midrule
+Хранение & размещение и чтение данных на внешней памяти\\
+Обработка запросов & разбор, построение и выполнение плана запроса\\
+Целостность & контроль ограничений и допустимых состояний данных\\
+Транзакции & согласованное выполнение группы операций\\
+Конкурентный доступ & корректная работа нескольких пользователей\\
+Безопасность & аутентификация, роли и права доступа\\
+Журналирование и восстановление & сохранение информации, необходимой для восстановления после сбоев\\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{frame}
+
+% =========================================================
+% 4. АРХИТЕКТУРА
+% =========================================================
+\begin{frame}{Из каких частей состоит СУБД}
+\begin{center}
+\begin{tikzpicture}[node distance=0.55cm and 1.0cm]
+  \node[module,minimum width=3.4cm] (parser) {Обработчик\\запросов};
+  \node[module,below=of parser] (tx) {Менеджер\\транзакций};
+  \node[module,below=of tx] (storage) {Менеджер\\хранения};
+  \node[module,right=1.0cm of parser] (catalog) {Системный каталог\\и метаданные};
+  \node[module,right=1.0cm of tx] (buffer) {Буферный\\менеджер};
+  \node[module,right=1.0cm of storage] (recovery) {Журналирование\\и восстановление};
+  \draw[thick,svfuAccent] (parser)--(catalog);
+  \draw[thick,svfuAccent] (parser)--(tx);
+  \draw[thick,svfuAccent] (tx)--(buffer);
+  \draw[thick,svfuAccent] (storage)--(buffer);
+  \draw[thick,svfuAccent] (tx)--(recovery);
+\end{tikzpicture}
+\end{center}
+\vspace{0.2cm}
+\begin{alertblock}{Не нужно запоминать реализацию конкретного продукта}
+Архитектура PostgreSQL, MySQL, Oracle и других СУБД различается деталями,
+но набор решаемых задач имеет одну общую инженерную основу.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Путь SQL-запроса через СУБД}
+\begin{center}
+\begin{tikzpicture}[node distance=0.55cm and 0.55cm]
+  \node[actor] (app) {Клиент\texttt{SELECT ...}};
+  \node[module,right=of app] (parser) {Разбор\\запроса};
+  \node[module,right=of parser] (plan) {Планирование\\и оптимизация};
+  \node[module,right=of plan] (exec) {Выполнение};
+  \node[entity,right=of exec,minimum width=2.3cm] (data) {Данные};
+  \draw[-{Latex[length=2.3mm]},thick,svfuAccent] (app)--(parser);
+  \draw[-{Latex[length=2.3mm]},thick,svfuAccent] (parser)--(plan);
+  \draw[-{Latex[length=2.3mm]},thick,svfuAccent] (plan)--(exec);
+  \draw[-{Latex[length=2.3mm]},thick,svfuAccent] (exec)--(data);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.35cm}
+\begin{itemize}
+  \item разбор: синтаксис и смысловые элементы;
+  \item планирование: какой способ выполнения выбрать;
+  \item выполнение: чтение или изменение данных;
+  \item возврат результата клиенту.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Клиент и сервер базы данных}
+\begin{center}
+\begin{tikzpicture}[node distance=0.45cm and 1.0cm]
+  \node[actor] (gui) {Приложение / CLI-клиент};
+  \node[module,right=of gui,minimum width=4.0cm] (server) {Сервер СУБД\footnotesize PostgreSQL};
+  \node[entity,right=of server,minimum width=3.0cm] (db) {База данных};
+  \draw[<->,thick,svfuAccent] (gui)--(server);
+  \draw[<->,thick,svfuDark] (server)--(db);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.35cm}
+\begin{block}{Ключевая идея}
+Клиент не работает непосредственно с файлами базы данных. Он отправляет запросы
+серверу СУБД, а сервер отвечает за выполнение операций и защиту данных.
+\end{block}
+\end{frame}
+
+\begin{frame}{Кто взаимодействует с СУБД}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.32\textwidth}|p{0.56\textwidth}}
+\toprule
+\textbf{Участник} & \textbf{Типичные задачи}\\
+\midrule
+Администратор БД & создание ролей, настройка доступа, резервное копирование, контроль эксплуатации\\
+Разработчик & проектирование схемы, SQL, транзакции, работа с API СУБД\\
+Аналитик / специалист & формирование запросов, выборка и анализ данных\\
+Конечный пользователь & работа с данными через прикладное приложение\\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{frame}
+
+% =========================================================
+% 5. SQL
+% =========================================================
+\begin{frame}{SQL как язык взаимодействия с реляционной СУБД}
+\begin{block}{SQL}
+\textbf{SQL (Structured Query Language)} — стандартизованный язык работы
+с реляционными базами данных, включающий средства определения структуры,
+манипулирования данными и управления доступом и транзакциями.
+\end{block}
+
+\vspace{0.3cm}
+\begin{itemize}
+  \item SQL в основном декларативен: описывается требуемый результат или операция;
+  \item конкретный план выполнения выбирает СУБД;
+  \item разные СУБД поддерживают SQL с диалектными и функциональными отличиями.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Подъязыки SQL: карта лекции}
+\begin{center}
+\begin{tikzpicture}[node distance=0.4cm and 0.55cm]
+  \node[phase,minimum width=2.7cm] (ddl) {DDL\\\footnotesize структура};
+  \node[phase,right=of ddl,minimum width=2.7cm] (dml) {DML\\\footnotesize данные};
+  \node[phase,right=of dml,minimum width=2.7cm] (dcl) {DCL\\\footnotesize доступ};
+  \node[phase,right=of dcl,minimum width=2.7cm] (tcl) {TCL\\\footnotesize транзакции};
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.45cm}
+\small
+\begin{tabular}{p{0.14\textwidth}|p{0.38\textwidth}|p{0.34\textwidth}}
+\toprule
+\textbf{DDL} & определение объектов БД & \texttt{CREATE}, \texttt{ALTER}, \texttt{DROP}\\
+\textbf{DML} & изменение и выборка данных & \texttt{SELECT}, \texttt{INSERT}, \texttt{UPDATE}, \texttt{DELETE}\\
+\textbf{DCL} & управление правами & \texttt{GRANT}, \texttt{REVOKE}\\
+\textbf{TCL} & управление транзакциями & \texttt{COMMIT}, \texttt{ROLLBACK}, \texttt{SAVEPOINT}\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.2cm}
+\footnotesize
+Примечание: классификация команд в учебной литературе может отличаться; например,
+\texttt{SELECT} иногда выделяют отдельно как DQL.
+\end{frame}
+
+% =========================================================
+% DDL
+% =========================================================
+\begin{frame}{DDL: Data Definition Language}
+\begin{block}{Назначение}
+DDL используется для \textbf{определения и изменения объектов базы данных}:
+схем, таблиц, ограничений, индексов, представлений и других объектов.
+\end{block}
+
+\vspace{0.3cm}
+\begin{center}
+\begin{tikzpicture}[node distance=0.55cm and 0.55cm]
+  \node[cmd] (c) {CREATE};
+  \node[cmd,right=of c] (a) {ALTER};
+  \node[cmd,right=of a] (d) {DROP};
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (c)--(a);
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (a)--(d);
+\end{tikzpicture}
+\end{center}
+
+\begin{alertblock}{Практический смысл}
+DDL отвечает на вопрос: \textbf{какие объекты должны существовать в БД и как они устроены?}
+\end{alertblock}
+\end{frame}
+
+% =========================================================
+% ТИПЫ ДАННЫХ
+% =========================================================
+\begin{frame}{Типы данных в PostgreSQL}
+\begin{block}{Зачем нужен тип данных?}
+Тип данных определяет, какие значения может хранить столбец,
+какие операции над ними допустимы и как СУБД должна их интерпретировать.
+\end{block}
+
+\vspace{0.3cm}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.28\textwidth}|p{0.25\textwidth}|p{0.34\textwidth}}
+\toprule
+\textbf{Группа} & \textbf{Примеры} & \textbf{Для чего}\\
+\midrule
+Числовые & \texttt{INTEGER}, \texttt{BIGINT}, \texttt{NUMERIC} & идентификаторы, счётчики, деньги\\
+Строковые & \texttt{TEXT}, \texttt{VARCHAR(n)} & имена, коды, описания\\
+Дата и время & \texttt{DATE}, \texttt{TIMESTAMP} & даты, моменты времени\\
+Логические & \texttt{BOOLEAN} & да/нет, включено/выключено\\
+Специальные & \texttt{UUID}, \texttt{JSONB} & идентификаторы и полуструктурированные данные\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.2cm}
+\alert{Выбор типа — часть проектирования схемы, а не декоративное свойство столбца.}
+\end{frame}
+
+\begin{frame}{Числовые типы данных}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.25\textwidth}|p{0.29\textwidth}|p{0.34\textwidth}}
+\toprule
+\textbf{Тип} & \textbf{Характеристика} & \textbf{Пример}\\
+\midrule
+\texttt{SMALLINT} & малый целый тип & номер курса, небольшой счётчик\\
+\texttt{INTEGER} & основной целый тип & идентификатор, количество\\
+\texttt{BIGINT} & большой целый тип & большие счётчики и идентификаторы\\
+\texttt{NUMERIC(p,s)} & точная десятичная арифметика & цена, сумма, финансовые значения\\
+\texttt{REAL} / \texttt{DOUBLE PRECISION} & числа с плавающей точкой & измерения, научные вычисления\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.25cm}
+\begin{alertblock}{Практическое правило}
+Для денег и других величин, где важна точность десятичного представления,
+обычно выбирают \texttt{NUMERIC}, а не тип с плавающей точкой.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Строковые, логические и временные типы}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.29\textwidth}|p{0.30\textwidth}|p{0.29\textwidth}}
+\toprule
+\textbf{Тип} & \textbf{Пример значения} & \textbf{Пример применения}\\
+\midrule
+\texttt{TEXT} & \texttt{'Иванов Иван'} & имя, описание, текст\\
+\texttt{VARCHAR(n)} & \texttt{'ПМИ-25'} & строка с ограниченной длиной\\
+\texttt{BOOLEAN} & \texttt{TRUE} / \texttt{FALSE} & активен ли пользователь\\
+\texttt{DATE} & \texttt{2026-09-07} & дата рождения, дата события\\
+\texttt{TIMESTAMP} & дата + время & момент регистрации события\\
+\texttt{TIMESTAMPTZ} & дата + время с часовым поясом & события в распределённых системах\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.25cm}
+\begin{block}{Важно}
+\texttt{DATE} хранит дату, а \texttt{TIMESTAMP/TIMESTAMPTZ} — момент или дату с временной составляющей.
+Выбирать тип нужно исходя из смысла данных.
+\end{block}
+\end{frame}
+
+\begin{frame}{Специальные типы: UUID и JSONB}
+\small
+\begin{block}{UUID}
+\texttt{UUID} — 128-битный идентификатор, представляемый шестнадцатеричной строкой.
+Удобен, когда идентификаторы должны быть уникальны независимо от локальной последовательности чисел.
+\end{block}
+
+\vspace{0.2cm}
+\codebox{CREATE TABLE device (\\
+\hspace*{2em}id UUID PRIMARY KEY,\\
+\hspace*{2em}config JSONB\\
+);}
+
+\vspace{0.15cm}
+\begin{block}{JSONB}
+\texttt{JSONB} позволяет хранить структурированные документы в бинарно обработанном
+внутреннем представлении PostgreSQL. Это не отменяет реляционное проектирование:
+таблицы остаются основным средством моделирования строгих связей и ограничений.
+\end{block}
+\end{frame}
+
+\begin{frame}{Как выбирать тип данных}
+\begin{enumerate}
+  \item Определить \textbf{смысл} значения, а не только его внешний вид.
+  \item Выбрать тип, который естественно выражает этот смысл.
+  \item Не хранить числа и даты как \texttt{TEXT}, если над ними нужны соответствующие операции.
+  \item Для денежных и точных десятичных значений использовать \texttt{NUMERIC}.
+  \item Ограничения \texttt{NOT NULL}, \texttt{CHECK}, \texttt{UNIQUE} и ключи задавать отдельно — тип данных не заменяет ограничения целостности.
+\end{enumerate}
+
+\vspace{0.25cm}
+\begin{alertblock}{Пример}
+\texttt{age INTEGER} лучше, чем \texttt{age TEXT};
+\texttt{birth\_date DATE} лучше, чем \texttt{birth\_date TEXT}.
+СУБД сможет корректно сравнивать, сортировать и проверять такие значения.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Тип данных и значение по умолчанию}
+\small
+Тип определяет множество допустимых значений,
+а \texttt{DEFAULT} определяет значение, которое СУБД может подставить,
+если при вставке оно не указано.
+
+\vspace{0.25cm}
+\codebox{CREATE TABLE student (\\
+\hspace*{2em}id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\\
+\hspace*{2em}name TEXT NOT NULL,\\
+\hspace*{2em}course INTEGER DEFAULT 1,\\
+\hspace*{2em}active BOOLEAN DEFAULT TRUE\\
+);}
+
+\vspace{0.2cm}
+\begin{itemize}
+  \item \texttt{INTEGER}, \texttt{TEXT}, \texttt{BOOLEAN} — типы данных;
+  \item \texttt{DEFAULT} — значение по умолчанию;
+  \item \texttt{NOT NULL} — запрет отсутствующего значения;
+  \item \texttt{PRIMARY KEY} — ограничение уникальной идентификации.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{NULL: отсутствие значения — не тип данных}
+\small
+\begin{block}{Что такое \texttt{NULL}?}
+\texttt{NULL} обозначает отсутствие известного или заданного значения.
+Это не строка \texttt{'NULL'}, не число 0 и не пустая строка \texttt{''}.
+\end{block}
+
+\vspace{0.25cm}
+\begin{table}
+\centering
+\begin{tabular}{p{0.23\textwidth}|p{0.27\textwidth}|p{0.36\textwidth}}
+\toprule
+\textbf{Значение} & \textbf{Пример} & \textbf{Смысл}\\
+\midrule
+Число & \texttt{0} & известное числовое значение\\
+Пустая строка & \texttt{''} & известная строка длины 0\\
+\texttt{NULL} & \texttt{NULL} & значение отсутствует / неизвестно\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.2cm}
+\alert{Проверка отсутствия значения выполняется через \texttt{IS NULL} / \texttt{IS NOT NULL}, а не через \texttt{= NULL}.}
+\end{frame}
+
+\begin{frame}{Идентификаторы: SERIAL и IDENTITY}
+\small
+В учебных примерах часто встречается:
+\codebox{CREATE TABLE student (\\
+\hspace*{2em}id SERIAL PRIMARY KEY,\\
+\hspace*{2em}name TEXT NOT NULL\\
+);}
+
+\vspace{0.2cm}
+\begin{block}{Современный вариант PostgreSQL}
+Для автоматически генерируемых идентификаторов рекомендуется рассматривать стандартный механизм
+\texttt{GENERATED ... AS IDENTITY}:
+\end{block}
+
+\codebox{CREATE TABLE student (\
+\hspace*{2em}id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\
+\hspace*{2em}name TEXT NOT NULL\
+);}
+
+\vspace{0.15cm}
+\footnotesize
+\texttt{SERIAL} — удобный исторический механизм на основе последовательности;
+\texttt{IDENTITY} — более явный современный синтаксис определения автоматически генерируемого столбца.
+\end{frame}
+
+\begin{frame}{DDL: создание таблицы}
+\codebox{CREATE TABLE student (\\
+\hspace*{2em}id INTEGER PRIMARY KEY,\\
+\hspace*{2em}name TEXT NOT NULL,\\
+\hspace*{2em}group\_id INTEGER\\
+);}
+
+\vspace{0.25cm}
+\begin{itemize}
+  \item имя таблицы задаёт объект схемы;
+  \item столбцы определяют структуру строки;
+  \item тип данных ограничивает множество допустимых значений;
+  \item ограничения задают правила целостности.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{DDL: типы данных и ограничения}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.27\textwidth}|p{0.25\textwidth}|p{0.36\textwidth}}
+\toprule
+\textbf{Элемент} & \textbf{Пример} & \textbf{Идея}\\
+\midrule
+Тип & \texttt{INTEGER}, \texttt{TEXT}, \texttt{DATE} & какие значения допустимы\\
+\texttt{PRIMARY KEY} & \texttt{id} & уникальный идентификатор строки\\
+\texttt{NOT NULL} & \texttt{name} & значение обязательно\\
+\texttt{UNIQUE} & \texttt{email} & значения не должны повторяться\\
+\texttt{CHECK} & \texttt{score BETWEEN 2 AND 5} & произвольное условие\\
+\texttt{FOREIGN KEY} & \texttt{group\_id} & ссылочная целостность\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.2cm}
+\alert{DDL определяет правила, а не сами экземпляры данных.}
+\end{frame}
+
+\begin{frame}{DDL: изменение структуры с помощью ALTER}
+\codebox{ALTER TABLE student ADD COLUMN email TEXT;}
+\vspace{0.15cm}
+\codebox{ALTER TABLE student ADD CONSTRAINT student\_email\_uq UNIQUE (email);}
+
+\vspace{0.25cm}
+\begin{itemize}
+  \item \texttt{ADD COLUMN} — добавить столбец;
+  \item \texttt{ALTER COLUMN} — изменить свойства столбца;
+  \item \texttt{ADD CONSTRAINT} — добавить ограничение;
+  \item состав конкретных возможностей зависит от СУБД и её версии.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{DDL: удаление объектов и осторожность}
+\begin{center}
+\begin{tikzpicture}[node distance=0.6cm]
+  \node[cmd] (drop) {DROP TABLE student;};
+  \node[cmd,below=of drop] (alter) {ALTER TABLE student ...;};
+  \node[cmd,below=of alter] (create) {CREATE TABLE student (...);};
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (drop)--(alter);
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (alter)--(create);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.25cm}
+\begin{alertblock}{Операции DDL требуют внимания}
+Удаление или изменение структуры может сделать существующие запросы и приложения
+несовместимыми со схемой БД. Поэтому DDL — часть проектирования и сопровождения схемы.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{DDL: небольшой пример схемы «Университет»}
+\codebox{CREATE TABLE student (\\
+\hspace*{2em}id INTEGER PRIMARY KEY,\\
+\hspace*{2em}name TEXT NOT NULL,\\
+\hspace*{2em}group\_id INTEGER REFERENCES student\_group(id)\\
+);}
+
+\vspace{0.2cm}
+\begin{block}{Что делает этот код?}
+Он создаёт таблицу и одновременно фиксирует часть логической модели:
+у студента есть идентификатор, имя и ссылка на группу.
+\end{block}
+
+\footnotesize
+Полная схема должна быть создана в согласованном порядке, учитывая зависимости внешних ключей.
+\end{frame}
+
+% =========================================================
+% DML
+% =========================================================
+\begin{frame}{DML: Data Manipulation Language}
+\begin{block}{Назначение}
+DML используется для \textbf{работы с данными внутри уже созданных объектов БД}.
+\end{block}
+
+\vspace{0.3cm}
+\begin{center}
+\begin{tikzpicture}[node distance=0.55cm and 0.55cm]
+  \node[cmd] (i) {INSERT};
+  \node[cmd,right=of i] (s) {SELECT};
+  \node[cmd,right=of s] (u) {UPDATE};
+  \node[cmd,right=of u] (d) {DELETE};
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.35cm}
+\begin{alertblock}{Важное различие}
+DDL меняет \textbf{структуру объектов}; DML работает с \textbf{экземплярами данных}.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{DML: добавление данных — INSERT}
+\codebox{INSERT INTO student (id, name, group\_id)\\
+VALUES (101, 'Иванов Иван', 10);}
+
+\vspace{0.25cm}
+\begin{itemize}
+  \item явно перечислять столбцы — надёжнее, чем полагаться на порядок всех полей;
+  \item СУБД проверяет типы и ограничения;
+  \item при нарушении ограничения операция завершается ошибкой.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{DML: выборка данных — SELECT}
+\codebox{SELECT id, name\\
+FROM student\\
+WHERE group\_id = 10;}
+
+\vspace{0.25cm}
+\begin{itemize}
+  \item \texttt{SELECT} определяет, какие значения нужно получить;
+  \item \texttt{FROM} указывает источник данных;
+  \item \texttt{WHERE} задаёт условие отбора строк.
+\end{itemize}
+
+\begin{alertblock}{Для лабораторной}
+На этом синтаксисе начинается практическая работа с запросами.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{DML: условия выборки — WHERE}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.24\textwidth}|p{0.55\textwidth}}
+\toprule
+Оператор & Пример\\
+\midrule
+Сравнение & \texttt{score >= 4}\\
+И & \texttt{group\_id = 10 AND name IS NOT NULL}\\
+Или & \texttt{group\_id = 10 OR group\_id = 11}\\
+Диапазон & \texttt{score BETWEEN 3 AND 5}\\
+Множество & \texttt{group\_id IN (10,11,12)}\\
+Шаблон & \texttt{name LIKE 'Ив\%'}\\
+Пустое значение & \texttt{email IS NULL}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.15cm}
+\footnotesize
+\textbf{Важно:} \texttt{NULL} не равен обычному значению и проверяется через
+\texttt{IS NULL}/\texttt{IS NOT NULL}.
+\end{frame}
+
+\begin{frame}{DML: изменение данных — UPDATE}
+\codebox{UPDATE student\\
+SET name = 'Иванов И. И.'\\
+WHERE id = 101;}
+
+\vspace{0.3cm}
+\begin{alertblock}{Критически важно}
+Запрос \texttt{UPDATE} без корректного условия \texttt{WHERE} может изменить
+\textbf{все строки} таблицы.
+\end{alertblock}
+
+\vspace{0.15cm}
+То же правило касается и других массовых операций над данными.
+\end{frame}
+
+\begin{frame}{DML: удаление данных — DELETE}
+\codebox{DELETE FROM student\\
+WHERE id = 101;}
+
+\vspace{0.3cm}
+\begin{itemize}
+  \item удаляются строки, удовлетворяющие условию;
+  \item ограничения внешних ключей могут запретить удаление;
+  \item удаление данных и удаление таблицы — разные операции.
+\end{itemize}
+
+\begin{block}{Сравнение}
+\texttt{DELETE} — работа с данными.\\
+\texttt{DROP TABLE} — удаление объекта схемы.
+\end{block}
+\end{frame}
+
+\begin{frame}{SELECT, INSERT, UPDATE, DELETE: единый цикл работы}
+\begin{center}
+\begin{tikzpicture}[node distance=0.45cm and 0.5cm]
+  \node[phase] (s) {SELECT\\просмотреть};
+  \node[phase,right=of s] (i) {INSERT\\добавить};
+  \node[phase,right=of i] (u) {UPDATE\\изменить};
+  \node[phase,right=of u] (d) {DELETE\\удалить};
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (s)--(i);
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (i)--(u);
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (u)--(d);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.35cm}
+\begin{alertblock}{Практическая схема}
+Создали структуру через DDL \;$\rightarrow$\; заполнили и изменяем её через DML
+\;$\rightarrow$\; доступ ограничиваем через DCL \;$\rightarrow$\; согласованность операций управляем через TCL.
+\end{alertblock}
+\end{frame}
+
+% =========================================================
+% DCL
+% =========================================================
+\begin{frame}{DCL: Data Control Language}
+\begin{block}{Назначение}
+DCL используется для управления \textbf{правами доступа} пользователей и ролей
+к объектам базы данных.
+\end{block}
+
+\vspace{0.3cm}
+\begin{center}
+\begin{tikzpicture}[node distance=0.75cm and 1.4cm]
+  \node[actor] (role) {Роль / пользователь};
+  \node[module,right=of role,minimum width=3.6cm] (obj) {Объект БД};
+  \node[cmd,below=of obj] (grant) {GRANT / REVOKE};
+  \draw[<->,thick,svfuAccent] (role)--(obj);
+  \draw[-{Latex[length=2mm]},thick,svfuDark] (grant)--(obj);
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}{DCL: GRANT — выдать право}
+\codebox{GRANT SELECT ON student TO analyst;}
+\vspace{0.25cm}
+\codebox{GRANT SELECT, INSERT ON student TO operator;}
+
+\vspace{0.25cm}
+\begin{itemize}
+  \item право задаётся для конкретной роли или пользователя;
+  \item можно разрешать отдельные операции;
+  \item принцип наименьших привилегий: выдавать только необходимые права.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{DCL: REVOKE — забрать право}
+\codebox{REVOKE INSERT ON student FROM analyst;}
+
+\vspace{0.3cm}
+\begin{itemize}
+  \item \texttt{GRANT} добавляет разрешение;
+  \item \texttt{REVOKE} отзывает разрешение;
+  \item система прав может быть многоуровневой и включать наследование ролей.
+\end{itemize}
+
+\begin{alertblock}{Зачем это нужно}
+Даже корректно спроектированная БД небезопасна, если любой пользователь может
+изменять любые данные.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{DCL: пример разделения доступа}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.30\textwidth}|p{0.20\textwidth}|p{0.38\textwidth}}
+\toprule
+\textbf{Роль} & \textbf{Право} & \textbf{Назначение}\\
+\midrule
+\texttt{analyst} & SELECT & анализ данных без изменения\\
+\texttt{operator} & SELECT, INSERT, UPDATE & операционная работа\\
+\texttt{auditor} & SELECT & контроль и аудит\\
+\texttt{admin} & расширенный доступ & администрирование\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+\begin{block}{Принцип}
+Права должны отражать реальную роль человека или сервиса, а не выдаваться
+«на всякий случай».
+\end{block}
+\end{frame}
+
+% =========================================================
+% TCL
+% =========================================================
+\begin{frame}{TCL: управление транзакциями}
+\begin{block}{Транзакция}
+\textbf{Транзакция} — логически связанная последовательность операций,
+которую СУБД рассматривает как единое целое для фиксации или отмены результата.
+\end{block}
+
+\vspace{0.25cm}
+\begin{center}
+\begin{tikzpicture}[node distance=0.5cm and 0.65cm]
+  \node[phase] (begin) {BEGIN};
+  \node[phase,right=of begin] (ops) {Операции};
+  \node[phase,right=of ops] (commit) {COMMIT};
+  \node[phase,below=0.55cm of ops] (rollback) {ROLLBACK};
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (begin)--(ops);
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (ops)--(commit);
+  \draw[-{Latex[length=2mm]},thick,svfuDark] (ops)--(rollback);
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}{TCL: COMMIT и ROLLBACK}
+\codebox{BEGIN;\\
+UPDATE student SET group\_id = 11 WHERE id = 101;\\
+COMMIT;}
+
+\vspace{0.2cm}
+\codebox{BEGIN;\\
+UPDATE student SET group\_id = 99 WHERE id = 101;\\
+ROLLBACK;}
+
+\vspace{0.2cm}
+\begin{itemize}
+  \item \texttt{COMMIT} фиксирует изменения транзакции;
+  \item \texttt{ROLLBACK} отменяет незафиксированные изменения транзакции.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{TCL: SAVEPOINT}
+\codebox{BEGIN;\\
+INSERT INTO student VALUES (102, 'Петров П. П.', 10);\\
+SAVEPOINT before;\\
+UPDATE student SET group\_id = 11 WHERE id = 102;\\
+ROLLBACK TO SAVEPOINT before;\\
+COMMIT;}
+
+\vspace{0.25cm}
+\begin{block}{Идея}
+\texttt{SAVEPOINT} создаёт промежуточную точку, к которой можно вернуться,
+не отменяя всю транзакцию целиком.
+\end{block}
+\end{frame}
+
+\begin{frame}{Транзакция на примере перевода}
+\begin{center}
+\begin{tikzpicture}[node distance=0.55cm and 0.65cm]
+  \node[actor] (a) {Счёт A\\1000};
+  \node[module,right=of a] (s1) {списать 200};
+  \node[module,right=of s1] (s2) {зачислить 200};
+  \node[actor,right=of s2] (b) {Счёт B\\500};
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (a)--(s1);
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (s1)--(s2);
+  \draw[-{Latex[length=2mm]},thick,svfuAccent] (s2)--(b);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.25cm}
+\begin{alertblock}{Почему нужна транзакция?}
+Если первая операция выполнена, а вторая завершилась ошибкой, состояние «деньги списали,
+но не зачислили» недопустимо. Группа операций должна быть согласована как единое целое.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{ACID: почему транзакции являются основой надёжности}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.23\textwidth}|p{0.62\textwidth}}
+\toprule
+\textbf{Свойство} & \textbf{Смысл}\\
+\midrule
+Atomicity & транзакция выполняется целиком или не даёт своего результата\\
+Consistency & после успешной транзакции должны сохраняться заданные правила целостности\\
+Isolation & параллельные транзакции должны взаимодействовать контролируемым образом\\
+Durability & зафиксированный результат должен сохраняться при штатных сбоях\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.2cm}
+\footnotesize
+Детали уровней изоляции, блокировок и многоверсионного контроля — отдельная тема;
+здесь фиксируется только логическая основа.
+\end{frame}
+
+% =========================================================
+% СВОДКА
+% =========================================================
+\begin{frame}{DDL, DML, DCL и TCL: не путать назначение}
+\small
+\begin{table}
+\centering
+\begin{tabular}{p{0.15\textwidth}|p{0.30\textwidth}|p{0.42\textwidth}}
+\toprule
+\textbf{Группа} & \textbf{Вопрос} & \textbf{Примеры}\\
+\midrule
+DDL & Что существует в БД? & \texttt{CREATE}, \texttt{ALTER}, \texttt{DROP}\\
+DML & Какие данные храним и изменяем? & \texttt{SELECT}, \texttt{INSERT}, \texttt{UPDATE}, \texttt{DELETE}\\
+DCL & Кто что может делать? & \texttt{GRANT}, \texttt{REVOKE}\\
+TCL & Как зафиксировать или отменить группу операций? & \texttt{COMMIT}, \texttt{ROLLBACK}, \texttt{SAVEPOINT}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.35cm}
+\begin{center}
+\Large
+\textbf{Структура} $\rightarrow$ \textbf{Данные} $\rightarrow$ \textbf{Доступ} $\rightarrow$ \textbf{Согласованность}
+\end{center}
+\end{frame}
+
+\begin{frame}{Минимальный сценарий работы с PostgreSQL}
+\begin{center}
+\begin{tikzpicture}[node distance=0.45cm and 0.35cm]
+  \node[phase] (ddl) {1. DDL\\создать схему};
+  \node[phase,right=of ddl] (dml) {2. DML\\записать данные};
+  \node[phase,right=of dml] (dcl) {3. DCL\\выдать права};
+  \node[phase,right=of dcl] (tcl) {4. TCL\\управлять операциями};
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.45cm}
+\begin{block}{Пример рабочего цикла}
+Создать таблицы \;$\rightarrow$\; вставить данные \;$\rightarrow$\; выполнить SELECT
+\;$\rightarrow$\; изменить данные в транзакции \;$\rightarrow$\; зафиксировать результат.
+\end{block}
+
+\begin{alertblock}{Следующий шаг}
+В лабораторной работе этот цикл превращается в практику: студенты начинают писать
+и выполнять реальные SQL-запросы к PostgreSQL.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Типичные ошибки начинающего разработчика}
+\begin{itemize}
+  \item путать таблицу с базой данных, а SQL — с самой СУБД;
+  \item менять структуру таблиц, не учитывая существующие зависимости;
+  \item выполнять \texttt{UPDATE} или \texttt{DELETE} без корректного \texttt{WHERE};
+  \item выдавать роли избыточные права;
+  \item выполнять несколько связанных изменений без транзакции;
+  \item считать, что успешный запуск команды автоматически означает корректность результата.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Что важно запомнить}
+\begin{enumerate}
+  \item СУБД управляет не только хранением, но и запросами, целостностью, доступом и транзакциями.
+  \item SQL является основным языком взаимодействия с реляционной СУБД.
+  \item DDL описывает структуру объектов базы данных.
+  \item DML выполняет операции над данными.
+  \item DCL управляет правами доступа.
+  \item TCL управляет фиксацией и отменой транзакций.
+  \item Одна прикладная задача часто требует совместного использования всех этих средств.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Контрольные вопросы}
+\small
+\begin{enumerate}
+  \item Какую основную проблему решает СУБД, а не просто набор файлов?
+  \item Какие основные компоненты СУБД участвуют в обработке запроса?
+  \item Как работает модель «клиент — сервер СУБД»?
+  \item Что такое SQL и почему его называют декларативным?
+  \item Чем отличается DDL от DML?
+  \item В чём разница между \texttt{DELETE} и \texttt{DROP TABLE}?
+  \item Для чего используются \texttt{GRANT} и \texttt{REVOKE}?
+  \item Что такое транзакция и зачем нужны \texttt{COMMIT} и \texttt{ROLLBACK}?
+  \item Для чего нужен \texttt{SAVEPOINT}?
+  \item Почему отсутствие корректного \texttt{WHERE} опасно в \texttt{UPDATE} и \texttt{DELETE}? 
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Подготовка к лабораторной работе}
+\begin{block}{Перед началом работы}
+Необходимо понимать четыре группы операций:
+\end{block}
+
+\begin{center}
+\begin{tabular}{p{0.17\textwidth}|p{0.62\textwidth}}
+\toprule
+DDL & создать таблицы и ограничения\\
+DML & вставить, выбрать, изменить и удалить строки\\
+DCL & назначить права ролям при необходимости\\
+TCL & объединить связанные изменения в транзакцию\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.3cm}
+\textbf{Лабораторная работа:} практическое выполнение SQL-команд в PostgreSQL.
+\end{frame}
+
+\begin{frame}[plain,noframenumbering]
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+{\LARGE\bfseries Спасибо за внимание!}
+\end{center}
+\vspace*{\fill}
+\end{frame}
+
+\end{document}
