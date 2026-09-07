@@ -1,0 +1,33 @@
+\frametitle{От ER-диаграммы к таблицам}
+
+\begin{center}
+\resizebox{0.85\textwidth}{!}{%
+\begin{tikzpicture}
+\node[entity] (g) {Группа};
+\node[entity, right=2.2cm of g] (s) {Студент};
+\draw[thick] (g) -- (s) node[card, midway, above] {\large{1 : N}};
+
+\node[font=\Large, right=1.4cm of s] (arrow) {$\Rightarrow$};
+
+\node[entity, fill=white, right=1.4cm of arrow, yshift=0.7cm] (t1) {student\_group};
+\node[entity, fill=white, below=0.6cm of t1] (t2) {student};
+\draw[-{Latex[length=2mm]}, thick, svfuAccent] (t2.north) -- (t1.south)
+  node[midway, right, font=\tiny] {\large{group\_id (KEY)}};
+\end{tikzpicture}
+}
+\end{center}
+
+\small
+\begin{verbatim}
+CREATE TABLE student_group (
+    id SERIAL PRIMARY KEY,
+    name TEXT
+);
+
+CREATE TABLE student (
+    id SERIAL PRIMARY KEY,
+    name TEXT,
+    group_id INTEGER REFERENCES student_group(id)
+);
+\end{verbatim}
+
